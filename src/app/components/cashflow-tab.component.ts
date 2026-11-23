@@ -8,7 +8,7 @@ import { formatDate, formatMoney } from '../utils/format';
   selector: 'app-cashflow-tab',
   standalone: true,
   template: `
-    <div class="mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4">
+    <div class="mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4 mt-4 mt-4">
       <div class="pill-scroll flex gap-2 overflow-x-auto pb-0.5 sm:flex-wrap sm:overflow-visible sm:gap-2.5">
         @for (option of filters; track option.id) {
           <button

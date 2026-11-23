@@ -31,6 +31,22 @@ import { dateInputToIso, formatDate, formatMoney, toDateInputValue } from '../ut
         </div>
       </article>
 
+      <article class="rounded-2xl border border-violet-200 bg-violet-50/40 p-4 shadow-sm sm:p-5">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p class="text-sm text-violet-800">خزنتي — المستلم تراكمياً</p>
+            <p class="mt-2 text-2xl font-semibold tracking-tight text-violet-950 sm:text-3xl">{{ money(vault.personalVaultTotal()) }}</p>
+            <p class="mt-2 text-xs text-violet-800/80">
+              @if (vault.personalVaultLedger().length) {
+                من {{ vault.personalVaultLedger().length }} عملية استلام · التفاصيل في تبويب «خزنتي»
+              } @else {
+                يظهر هنا أول ما تستلم وتصفّر الخزنة
+              }
+            </p>
+          </div>
+        </div>
+      </article>
+
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
         <article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           <p class="text-sm text-slate-500">إجمالي المستحق حتى الآن</p>

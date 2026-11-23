@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { ItemLifecycle, PayoutRecord, TrackedItem, VaultBackup } from '../models/dashboard.models';
 import { DashboardStore } from './dashboard-store.service';
+import { writeLocalUpdatedAt } from './state-meta';
 
 const STORAGE_KEY = 'piece86.vault.v1';
 
@@ -69,6 +70,23 @@ export class VaultStateService {
   readonly vaultBalance = computed(() => round2(this.inVaultItems().reduce((sum, item) => sum + item.partnerShare, 0)));
 
   readonly vaultCount = computed(() => this.inVaultItems().length);
+
+  /** مجموع كل عمليات «استلام وتصفير الخزنة» — المبلغ التراكمي اللي معاك */
+  readonly personalVaultTotal = computed(() =>
+    round2(this.payoutHistory().reduce((sum, p) => sum + p.amount, 0)),
+  );
+
+  /** سجل تراكمي مرتب من الأقدم للأحدث مع الرصيد بعد كل عملية */
+  readonly personalVaultLedger = computed(() => {
+    const sorted = [...this.payoutHistory()].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime() || a.id.localeCompare(b.id),
+    );
+    let running = 0;
+    return sorted.map((payout) => {
+      running = round2(running + payout.amount);
+      return { payout, runningTotal: running };
+    });
+  });
 
   constructor() {
     const saved = this.read();
@@ -139,6 +157,17 @@ export class VaultStateService {
     return JSON.stringify(payload, null, 2);
   }
 
+  replaceVaultState(
+    manualPaidMap: Record<string, boolean>,
+    payoutHistory: PayoutRecord[],
+    updatedAt?: string,
+  ): void {
+    this.manualPaidMap.set(manualPaidMap);
+    this.payoutHistory.set(payoutHistory);
+    this.importError.set(null);
+    this.persist(updatedAt);
+  }
+
   importJson(raw: string): void {
     const parsed = JSON.parse(raw) as Partial<VaultBackup>;
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
@@ -155,12 +184,13 @@ export class VaultStateService {
     this.persist();
   }
 
-  private persist(): void {
+  private persist(updatedAt?: string): void {
     const payload: VaultBackup = {
       manualPaidMap: this.manualPaidMap(),
       payoutHistory: this.payoutHistory(),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    writeLocalUpdatedAt(updatedAt ?? new Date().toISOString());
   }
 
   private read(): VaultBackup {

@@ -3,26 +3,30 @@ import { KpiCardsComponent } from './components/kpi-cards.component';
 import { CashflowTabComponent } from './components/cashflow-tab.component';
 import { ClientsTabComponent } from './components/clients-tab.component';
 import { WithdrawalsTabComponent } from './components/withdrawals-tab.component';
+import { MyVaultTabComponent } from './components/my-vault-tab.component';
 import { DashboardStore } from './services/dashboard-store.service';
 import { ExcelParserService } from './services/excel-parser.service';
+import { LatestStateService } from './services/latest-state.service';
 import { VaultStateService } from './services/vault-state.service';
-import { formatDate, toDateInputValue } from './utils/format';
+import { formatDate, formatMoney, toDateInputValue } from './utils/format';
 
-type Tab = 'cashflow' | 'clients' | 'withdrawals';
+type Tab = 'cashflow' | 'clients' | 'myvault' | 'withdrawals';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [KpiCardsComponent, CashflowTabComponent, ClientsTabComponent, WithdrawalsTabComponent],
+  imports: [KpiCardsComponent, CashflowTabComponent, ClientsTabComponent, MyVaultTabComponent, WithdrawalsTabComponent],
   templateUrl: './app.component.html',
 })
 export class AppComponent {
   readonly store = inject(DashboardStore);
   readonly parser = inject(ExcelParserService);
   readonly vault = inject(VaultStateService);
+  private readonly latestState = inject(LatestStateService);
   readonly tab = signal<Tab>('cashflow');
   readonly dragging = signal(false);
   readonly formatDate = formatDate;
+  readonly formatMoney = formatMoney;
 
   async onFile(file: File | undefined): Promise<void> {
     if (!file) return;
@@ -56,6 +60,16 @@ export class AppComponent {
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `piece86-vault-${toDateInputValue()}.json`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
+  exportLatestSiteState(): void {
+    const payload = this.latestState.exportSiteState();
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'latest-state.json';
     link.click();
     URL.revokeObjectURL(link.href);
   }

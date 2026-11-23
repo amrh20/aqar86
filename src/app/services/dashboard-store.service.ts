@@ -8,6 +8,7 @@ import {
 } from '../models/dashboard.models';
 import { currentMonthKey, monthKey, monthLabel } from '../utils/format';
 import { assignStableIds } from '../utils/stable-ids';
+import { writeLocalUpdatedAt } from './state-meta';
 
 const STORAGE_KEY = 'piece86.dashboard.v1';
 
@@ -118,11 +119,12 @@ export class DashboardStore {
       });
   });
 
-  setData(data: ParsedWorkbook): void {
+  setData(data: ParsedWorkbook, updatedAt?: string): void {
     assignStableIds(data.contracts ?? []);
     this.data.set(data);
     this.error.set(null);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    writeLocalUpdatedAt(updatedAt ?? data.uploadedAt);
   }
 
   clear(): void {

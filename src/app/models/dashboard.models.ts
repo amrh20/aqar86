@@ -50,6 +50,17 @@ export interface VaultBackup {
   payoutHistory: PayoutRecord[];
 }
 
+/** Bundled / deployable full app snapshot (public/latest-state.json). */
+export interface LatestSiteState {
+  updatedAt: string;
+  lastFileName: string;
+  contracts: Contract[];
+  installments: Installment[];
+  excelWithdrawals: Withdrawal[];
+  manualPaidMap: Record<string, boolean>;
+  payoutHistory: PayoutRecord[];
+}
+
 export interface TrackedItem {
   id: string;
   kind: ItemKind;
