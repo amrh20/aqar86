@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { ItemLifecycle, PayoutRecord, TrackedItem, VaultBackup } from '../models/dashboard.models';
 import { DashboardStore } from './dashboard-store.service';
+import { downPaymentLabel } from '../utils/schedule-labels';
 import { writeLocalUpdatedAt } from './state-meta';
 import { ToastService } from './toast.service';
 
@@ -33,7 +34,7 @@ export class VaultStateService {
         amount: contract.downPayment,
         partnerShare: contract.partnerDownPaymentShare,
         excelPaid: true,
-        label: 'مقدم الحجز',
+        label: downPaymentLabel(),
       });
       for (const installment of contract.installments) {
         items.push({
@@ -46,7 +47,7 @@ export class VaultStateService {
           amount: installment.amount,
           partnerShare: round2(installment.amount * 0.07),
           excelPaid: installment.remainingAmount <= 0 && installment.paidAmount > 0,
-          label: 'قسط',
+          label: installment.scheduleLabel ?? 'قسط دوري',
         });
       }
     }
@@ -119,7 +120,7 @@ export class VaultStateService {
     this.persist();
     if (next) {
       const item = this.itemById().get(id);
-      const label = item?.kind === 'downPayment' ? 'مقدم الحجز' : 'القسط';
+      const label = item?.label ?? (item?.kind === 'downPayment' ? downPaymentLabel() : 'قسط دوري');
       this.toast.success(`تم إضافة ${label} إلى الخزنة`);
     }
   }

@@ -1,4 +1,5 @@
 import { Contract } from '../models/dashboard.models';
+import { assignScheduleLabels } from './schedule-labels';
 
 export function assignStableIds(contracts: Contract[]): void {
   const seen = new Map<string, number>();
@@ -12,4 +13,5 @@ export function assignStableIds(contracts: Contract[]): void {
       installment.id = index === 0 ? base : `${base}_${index}`;
     }
   }
+  assignScheduleLabels(contracts);
 }

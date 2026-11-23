@@ -4,6 +4,7 @@ import { Contract, LifecycleFilter } from '../models/dashboard.models';
 import { DashboardStore } from '../services/dashboard-store.service';
 import { VaultStateService } from '../services/vault-state.service';
 import { formatDate, formatMoney } from '../utils/format';
+import { downPaymentLabel, scheduleBadgeClass } from '../utils/schedule-labels';
 
 @Component({
   selector: 'app-clients-tab',
@@ -117,7 +118,10 @@ import { formatDate, formatMoney } from '../utils/format';
                 <div class="flex items-start gap-3">
                   <input type="checkbox" class="mt-1 accent-slate-900" [checked]="vault.isChecked(contract.downPaymentId)" [disabled]="vault.lifecycle(contract.downPaymentId) === 'settled'" (change)="vault.toggle(contract.downPaymentId)" />
                   <div class="min-w-0 flex-1">
-                    <div class="font-medium text-slate-900">مقدم · {{ date(contract.contractDate) }}</div>
+                    <div class="font-medium text-slate-900">
+                      <span class="rounded-full px-2 py-0.5 text-xs" [class]="badge(downLabel)">{{ downLabel }}</span>
+                      · {{ date(contract.contractDate) }}
+                    </div>
                     <p class="mt-1 text-sm">7%: {{ money(contract.partnerDownPaymentShare) }}</p>
                     <p class="mt-1 text-xs text-slate-500">{{ money(contract.downPayment) }}</p>
                     <div class="mt-2">
@@ -139,7 +143,10 @@ import { formatDate, formatMoney } from '../utils/format';
                   <div class="flex items-start gap-3">
                     <input type="checkbox" class="mt-1 accent-slate-900" [checked]="vault.isChecked(item.id)" [disabled]="vault.lifecycle(item.id) === 'settled'" (change)="vault.toggle(item.id)" />
                     <div class="min-w-0 flex-1">
-                      <div class="font-medium text-slate-900">قسط · {{ date(item.dueDate) }}</div>
+                      <div class="font-medium text-slate-900">
+                        <span class="rounded-full px-2 py-0.5 text-xs" [class]="badge(item.scheduleLabel)">{{ item.scheduleLabel }}</span>
+                        · {{ date(item.dueDate) }}
+                      </div>
                       <div class="mt-2 grid grid-cols-2 gap-2 text-xs text-slate-600">
                         <span>القيمة: {{ money(item.amount) }}</span>
                         <span>7%: {{ money(item.partnerPaidShare + item.partnerRemainingShare) }}</span>
@@ -181,7 +188,9 @@ import { formatDate, formatMoney } from '../utils/format';
                   <td class="py-2">
                     <input type="checkbox" class="accent-slate-900" [checked]="vault.isChecked(contract.downPaymentId)" [disabled]="vault.lifecycle(contract.downPaymentId) === 'settled'" (change)="vault.toggle(contract.downPaymentId)" />
                   </td>
-                  <td class="py-2">مقدم</td>
+                  <td class="py-2">
+                    <span class="rounded-full px-2 py-0.5 text-xs" [class]="badge(downLabel)">{{ downLabel }}</span>
+                  </td>
                   <td class="py-2">{{ date(contract.contractDate) }}</td>
                   <td class="py-2">{{ money(contract.downPayment) }}</td>
                   <td class="py-2">{{ money(contract.downPayment) }}</td>
@@ -204,7 +213,9 @@ import { formatDate, formatMoney } from '../utils/format';
                     <td class="py-2">
                       <input type="checkbox" class="accent-slate-900" [checked]="vault.isChecked(item.id)" [disabled]="vault.lifecycle(item.id) === 'settled'" (change)="vault.toggle(item.id)" />
                     </td>
-                    <td class="py-2">قسط</td>
+                    <td class="py-2">
+                      <span class="rounded-full px-2 py-0.5 text-xs" [class]="badge(item.scheduleLabel)">{{ item.scheduleLabel }}</span>
+                    </td>
                     <td class="py-2">{{ date(item.dueDate) }}</td>
                     <td class="py-2">{{ money(item.amount) }}</td>
                     <td class="py-2">{{ money(item.paidAmount) }}</td>
@@ -238,6 +249,8 @@ export class ClientsTabComponent {
   readonly statusFilter = signal<LifecycleFilter>('all');
   readonly money = formatMoney;
   readonly date = formatDate;
+  readonly badge = scheduleBadgeClass;
+  readonly downLabel = downPaymentLabel();
   readonly filtered = computed(() => this.store.filterContracts(this.query()));
   readonly filters: { id: LifecycleFilter; label: string }[] = [
     { id: 'all', label: 'الكل' },

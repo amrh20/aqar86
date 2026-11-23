@@ -1,9 +1,11 @@
+import { NgClass } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { KpiCardsComponent } from './components/kpi-cards.component';
 import { CashflowTabComponent } from './components/cashflow-tab.component';
 import { ClientsTabComponent } from './components/clients-tab.component';
 import { WithdrawalsTabComponent } from './components/withdrawals-tab.component';
 import { MyVaultTabComponent } from './components/my-vault-tab.component';
+import { OverdueTabComponent } from './components/overdue-tab.component';
 import { ToastHostComponent } from './components/toast-host.component';
 import { DashboardStore } from './services/dashboard-store.service';
 import { ExcelParserService } from './services/excel-parser.service';
@@ -11,16 +13,18 @@ import { LatestStateService } from './services/latest-state.service';
 import { VaultStateService } from './services/vault-state.service';
 import { formatDate, formatMoney, toDateInputValue } from './utils/format';
 
-type Tab = 'cashflow' | 'clients' | 'myvault' | 'withdrawals';
+type Tab = 'cashflow' | 'clients' | 'myvault' | 'overdue' | 'withdrawals';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   imports: [
+    NgClass,
     KpiCardsComponent,
     CashflowTabComponent,
     ClientsTabComponent,
     MyVaultTabComponent,
+    OverdueTabComponent,
     WithdrawalsTabComponent,
     ToastHostComponent,
   ],

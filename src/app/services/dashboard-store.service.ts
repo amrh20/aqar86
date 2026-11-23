@@ -7,6 +7,7 @@ import {
   ParsedWorkbook,
 } from '../models/dashboard.models';
 import { currentMonthKey, monthKey, monthLabel } from '../utils/format';
+import { downPaymentLabel } from '../utils/schedule-labels';
 import { assignStableIds } from '../utils/stable-ids';
 import { writeLocalUpdatedAt } from './state-meta';
 
@@ -74,6 +75,7 @@ export class DashboardStore {
         remainingAmount: 0,
         partnerShare: contract.partnerDownPaymentShare,
         status: 'paid',
+        scheduleLabel: downPaymentLabel(),
       });
       for (const installment of contract.installments) {
         push(monthKey(installment.dueDate), {
@@ -86,6 +88,7 @@ export class DashboardStore {
           remainingAmount: installment.remainingAmount,
           partnerShare: round2(installment.amount * 0.07),
           status: installment.status,
+          scheduleLabel: installment.scheduleLabel ?? 'قسط دوري',
         });
       }
     }

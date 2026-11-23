@@ -3,52 +3,39 @@ import { LifecycleFilter } from '../models/dashboard.models';
 import { DashboardStore } from '../services/dashboard-store.service';
 import { VaultStateService } from '../services/vault-state.service';
 import { formatDate, formatMoney } from '../utils/format';
+import { scheduleBadgeClass } from '../utils/schedule-labels';
 
 @Component({
   selector: 'app-cashflow-tab',
   standalone: true,
   template: `
-    <div class="mb-5 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-4 mt-4 mt-4">
-      <div class="pill-scroll flex gap-2 overflow-x-auto pb-0.5 sm:flex-wrap sm:overflow-visible sm:gap-2.5">
+    <div class="mb-5 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-slate-200/80 bg-slate-50/80 px-4 py-2.5">
+      <div class="inline-flex gap-1 overflow-x-auto rounded-lg border border-slate-200 bg-white p-1">
         @for (option of filters; track option.id) {
           <button
             type="button"
-            class="shrink-0 snap-start rounded-full px-4 py-2.5 text-sm sm:px-3.5 sm:py-1.5 sm:text-xs"
-            [class.bg-slate-900]="filter() === option.id"
-            [class.text-white]="filter() === option.id"
-            [class.bg-white]="filter() !== option.id"
-            [class.border]="filter() !== option.id"
-            [class.border-slate-200]="filter() !== option.id"
+            class="shrink-0 rounded-md px-3 py-1.5 text-xs transition-colors"
+            [class]="filter() === option.id
+              ? 'bg-slate-900 font-medium text-white'
+              : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'"
             (click)="filter.set(option.id)"
           >{{ option.label }}</button>
         }
       </div>
 
-      <div class="pill-scroll flex items-center gap-2 overflow-x-auto pb-0.5 sm:flex-wrap sm:overflow-visible sm:gap-2.5">
-        <span class="shrink-0 text-xs text-slate-500">السنة:</span>
-        <button
-          type="button"
-          class="shrink-0 snap-start rounded-full px-4 py-2.5 text-sm sm:px-3.5 sm:py-1.5 sm:text-xs"
-          [class.bg-slate-900]="yearFilter() === 'all'"
-          [class.text-white]="yearFilter() === 'all'"
-          [class.bg-white]="yearFilter() !== 'all'"
-          [class.border]="yearFilter() !== 'all'"
-          [class.border-slate-200]="yearFilter() !== 'all'"
-          (click)="yearFilter.set('all')"
-        >الكل</button>
-        @for (year of availableYears(); track year) {
-          <button
-            type="button"
-            class="shrink-0 snap-start rounded-full px-4 py-2.5 text-sm sm:px-3.5 sm:py-1.5 sm:text-xs"
-            [class.bg-slate-900]="yearFilter() === year"
-            [class.text-white]="yearFilter() === year"
-            [class.bg-white]="yearFilter() !== year"
-            [class.border]="yearFilter() !== year"
-            [class.border-slate-200]="yearFilter() !== year"
-            (click)="yearFilter.set(year)"
-          >{{ year }}</button>
-        }
-      </div>
+      <label class="inline-flex items-center gap-2">
+        <span class="text-xs font-medium text-slate-600">السنة:</span>
+        <select
+          class="min-w-[130px] cursor-pointer rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+          [value]="selectedYear()"
+          (change)="onYearChange($event)"
+        >
+          <option value="all" [selected]="selectedYear() === 'all'">كل السنوات</option>
+          @for (y of availableYears(); track y) {
+            <option [value]="y" [selected]="selectedYear() === y">{{ y }}</option>
+          }
+        </select>
+      </label>
     </div>
 
     <div class="space-y-3">
@@ -113,7 +100,7 @@ import { formatDate, formatMoney } from '../utils/format';
                         <div class="flex flex-wrap items-center gap-2">
                           <span class="font-medium text-slate-900">{{ row.clientName }}</span>
                           <span class="text-xs text-slate-500">شقة {{ row.unitNumber }}</span>
-                          <span class="rounded bg-white px-1.5 py-0.5 text-xs text-slate-600">{{ row.kind === 'downPayment' ? 'مقدم' : 'قسط' }}</span>
+                          <span class="rounded px-1.5 py-0.5 text-xs" [class]="badge(row.scheduleLabel)">{{ row.scheduleLabel }}</span>
                         </div>
                         <p class="mt-1 text-xs text-slate-500">{{ date(row.dueDate) }} · {{ money(row.amount) }}</p>
                         <p class="mt-1 text-sm font-medium text-slate-900">نسبتك: {{ money(row.partnerShare) }}</p>
@@ -130,6 +117,13 @@ import { formatDate, formatMoney } from '../utils/format';
                     </div>
                   </div>
                 }
+                <div class="mt-2 flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                  <span class="text-xs font-medium text-slate-600">مجموع الشهر</span>
+                  <div class="text-left">
+                    <p class="text-sm font-semibold text-slate-900">{{ money(month.totalAmount) }}</p>
+                    <p class="text-xs text-slate-500">نسبتك: {{ money(month.partnerShare) }}</p>
+                  </div>
+                </div>
               </div>
               <div class="hidden overflow-x-auto md:block">
                 <table class="w-full min-w-[720px] text-sm">
@@ -157,7 +151,9 @@ import { formatDate, formatMoney } from '../utils/format';
                             (change)="vault.toggle(row.id)"
                           />
                         </td>
-                        <td class="py-2">{{ row.kind === 'downPayment' ? 'مقدم' : 'قسط' }}</td>
+                        <td class="py-2">
+                          <span class="rounded-full px-2 py-0.5 text-xs" [class]="badge(row.scheduleLabel)">{{ row.scheduleLabel }}</span>
+                        </td>
                         <td class="py-2">{{ row.clientName }}</td>
                         <td class="py-2">{{ row.unitNumber }}</td>
                         <td class="py-2">{{ date(row.dueDate) }}</td>
@@ -175,6 +171,14 @@ import { formatDate, formatMoney } from '../utils/format';
                       </tr>
                     }
                   </tbody>
+                  <tfoot>
+                    <tr class="border-t-2 border-slate-200 bg-slate-50/80">
+                      <td class="py-2.5 font-semibold text-slate-700" colspan="5">مجموع الشهر</td>
+                      <td class="py-2.5 font-semibold text-slate-900">{{ money(month.totalAmount) }}</td>
+                      <td class="py-2.5 font-semibold text-slate-900">{{ money(month.partnerShare) }}</td>
+                      <td class="py-2.5"></td>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
             </div>
@@ -189,9 +193,10 @@ export class CashflowTabComponent {
   readonly vault = inject(VaultStateService);
   readonly openKey = signal<string | null>(null);
   readonly filter = signal<LifecycleFilter>('all');
-  readonly yearFilter = signal<number | 'all'>(new Date().getFullYear());
+  readonly selectedYear = signal<string>(String(new Date().getFullYear()));
   readonly money = formatMoney;
   readonly date = formatDate;
+  readonly badge = scheduleBadgeClass;
   readonly filters: { id: LifecycleFilter; label: string }[] = [
     { id: 'all', label: 'الكل' },
     { id: 'unpaid', label: 'غير مسدد' },
@@ -200,23 +205,25 @@ export class CashflowTabComponent {
   ];
 
   readonly availableYears = computed(() => {
-    const years = new Set<number>();
+    const years = new Set<string>();
     for (const month of this.store.months()) {
       if (month.key === 'unknown') continue;
-      const year = Number(month.key.slice(0, 4));
-      if (Number.isFinite(year)) years.add(year);
+      const year = month.key.slice(0, 4);
+      if (/^\d{4}$/.test(year)) years.add(year);
     }
-    return [...years].sort((a, b) => a - b);
+    return [...years].sort((a, b) => a.localeCompare(b));
   });
 
   readonly visibleMonths = computed(() => {
     const filter = this.filter();
-    const year = this.yearFilter();
+    const year = this.selectedYear();
     return this.store.months()
       .filter((month) => year === 'all' || month.key.startsWith(`${year}-`))
       .map((month) => {
         const rows = month.rows.filter((row) => filter === 'all' || this.vault.lifecycle(row.id) === filter);
-        return { ...month, rows };
+        const totalAmount = Math.round(rows.reduce((sum, row) => sum + row.amount, 0) * 100) / 100;
+        const partnerShare = Math.round(rows.reduce((sum, row) => sum + row.partnerShare, 0) * 100) / 100;
+        return { ...month, rows, totalAmount, partnerShare };
       })
       .filter((month) => month.rows.length > 0);
   });
@@ -226,23 +233,27 @@ export class CashflowTabComponent {
       const years = this.availableYears();
       if (!years.length) return;
 
-      const current = this.yearFilter();
+      const current = this.selectedYear();
       if (current === 'all' || years.includes(current)) return;
 
-      const thisYear = new Date().getFullYear();
+      const thisYear = String(new Date().getFullYear());
       if (years.includes(thisYear)) {
-        this.yearFilter.set(thisYear);
+        this.selectedYear.set(thisYear);
         return;
       }
 
       const firstUnpaidYear = this.store.months().find((month) => month.dueCount > 0 && month.key !== 'unknown');
       if (firstUnpaidYear) {
-        this.yearFilter.set(Number(firstUnpaidYear.key.slice(0, 4)));
+        this.selectedYear.set(firstUnpaidYear.key.slice(0, 4));
         return;
       }
 
-      this.yearFilter.set(years[0]);
+      this.selectedYear.set(years[0]);
     });
+  }
+
+  onYearChange(event: Event): void {
+    this.selectedYear.set((event.target as HTMLSelectElement).value);
   }
 
   toggle(key: string): void {

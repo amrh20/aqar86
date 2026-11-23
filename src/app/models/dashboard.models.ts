@@ -16,6 +16,7 @@ export interface Installment {
   status: InstallmentStatus;
   partnerPaidShare: number;
   partnerRemainingShare: number;
+  scheduleLabel?: string;
 }
 
 export interface Contract {
@@ -111,6 +112,7 @@ export interface MonthInstallmentRow {
   remainingAmount: number;
   partnerShare: number;
   status: InstallmentStatus;
+  scheduleLabel: string;
 }
 
 export interface DashboardTotals {
