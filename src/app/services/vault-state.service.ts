@@ -2,12 +2,14 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { ItemLifecycle, PayoutRecord, TrackedItem, VaultBackup } from '../models/dashboard.models';
 import { DashboardStore } from './dashboard-store.service';
 import { writeLocalUpdatedAt } from './state-meta';
+import { ToastService } from './toast.service';
 
 const STORAGE_KEY = 'piece86.vault.v1';
 
 @Injectable({ providedIn: 'root' })
 export class VaultStateService {
   private readonly store = inject(DashboardStore);
+  private readonly toast = inject(ToastService);
 
   readonly manualPaidMap = signal<Record<string, boolean>>({});
   readonly payoutHistory = signal<PayoutRecord[]>([]);
@@ -115,6 +117,11 @@ export class VaultStateService {
     const next = !this.isChecked(id);
     this.manualPaidMap.update((map) => ({ ...map, [id]: next }));
     this.persist();
+    if (next) {
+      const item = this.itemById().get(id);
+      const label = item?.kind === 'downPayment' ? 'مقدم الحجز' : 'القسط';
+      this.toast.success(`تم إضافة ${label} إلى الخزنة`);
+    }
   }
 
   openPayoutModal(today: string): void {

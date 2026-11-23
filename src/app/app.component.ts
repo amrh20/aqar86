@@ -4,6 +4,7 @@ import { CashflowTabComponent } from './components/cashflow-tab.component';
 import { ClientsTabComponent } from './components/clients-tab.component';
 import { WithdrawalsTabComponent } from './components/withdrawals-tab.component';
 import { MyVaultTabComponent } from './components/my-vault-tab.component';
+import { ToastHostComponent } from './components/toast-host.component';
 import { DashboardStore } from './services/dashboard-store.service';
 import { ExcelParserService } from './services/excel-parser.service';
 import { LatestStateService } from './services/latest-state.service';
@@ -15,7 +16,14 @@ type Tab = 'cashflow' | 'clients' | 'myvault' | 'withdrawals';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [KpiCardsComponent, CashflowTabComponent, ClientsTabComponent, MyVaultTabComponent, WithdrawalsTabComponent],
+  imports: [
+    KpiCardsComponent,
+    CashflowTabComponent,
+    ClientsTabComponent,
+    MyVaultTabComponent,
+    WithdrawalsTabComponent,
+    ToastHostComponent,
+  ],
   templateUrl: './app.component.html',
 })
 export class AppComponent {
