@@ -10,6 +10,8 @@
 /node_modules
 npm-debug.log
 yarn-error.log
+.yarn-integrity
+.pnpm-store
 
 # IDEs and editors
 .idea/
@@ -27,15 +29,29 @@ yarn-error.log
 !.vscode/launch.json
 !.vscode/extensions.json
 .history/*
+.vscode-test
 
 # Miscellaneous
 /.angular/cache
 .sass-cache/
 /connect.lock
 /coverage
+*.lcov
+.nyc_output
 /libpeerconnection.log
 testem.log
 /typings
+*.tsbuildinfo
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Vite / build caches
+.vite/
+.cache
+.parcel-cache
 
 # System files
 .DS_Store
