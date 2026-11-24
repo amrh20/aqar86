@@ -19,6 +19,9 @@ export class VaultStateService {
   readonly previewOpen = signal(false);
   readonly payoutDate = signal('');
   readonly payoutNote = signal('');
+  /** بنود مختارة داخل مودال الاستلام — الكل محدد افتراضيًا */
+  readonly payoutSelectedIds = signal<Record<string, boolean>>({});
+  readonly payoutSearch = signal('');
   readonly importError = signal<string | null>(null);
   /** بند في انتظار تأكيد تفعيل/إلغاء التسديد من التشيك بوكس */
   readonly pendingToggleId = signal<string | null>(null);
@@ -83,6 +86,37 @@ export class VaultStateService {
   readonly vaultBalance = computed(() => round2(this.inVaultItems().reduce((sum, item) => sum + item.partnerShare, 0)));
 
   readonly vaultCount = computed(() => this.inVaultItems().length);
+
+  readonly filteredPayoutItems = computed(() => {
+    const q = this.payoutSearch().trim().toLowerCase();
+    const items = this.inVaultItems();
+    if (!q) return items;
+    return items.filter(
+      (item) =>
+        item.clientName.toLowerCase().includes(q) ||
+        item.unitNumber.toLowerCase().includes(q) ||
+        item.clientCode.toLowerCase().includes(q) ||
+        item.label.toLowerCase().includes(q),
+    );
+  });
+
+  readonly selectedPayoutItems = computed(() =>
+    this.inVaultItems().filter((item) => this.payoutSelectedIds()[item.id] !== false),
+  );
+
+  readonly unselectedPayoutItems = computed(() =>
+    this.inVaultItems().filter((item) => this.payoutSelectedIds()[item.id] === false),
+  );
+
+  readonly selectedPayoutBalance = computed(() =>
+    round2(this.selectedPayoutItems().reduce((sum, item) => sum + item.partnerShare, 0)),
+  );
+
+  readonly unselectedPayoutBalance = computed(() =>
+    round2(this.unselectedPayoutItems().reduce((sum, item) => sum + item.partnerShare, 0)),
+  );
+
+  readonly selectedPayoutCount = computed(() => this.selectedPayoutItems().length);
 
   /** مجموع كل عمليات «استلام وتصفير الخزنة» — المبلغ التراكمي اللي معاك */
   readonly personalVaultTotal = computed(() =>
@@ -152,12 +186,36 @@ export class VaultStateService {
     if (this.vaultBalance() === 0) return;
     this.payoutDate.set(today);
     this.payoutNote.set('');
-    this.previewOpen.set(false);
+    this.payoutSearch.set('');
+    const selected: Record<string, boolean> = {};
+    for (const item of this.inVaultItems()) selected[item.id] = true;
+    this.payoutSelectedIds.set(selected);
+    this.previewOpen.set(true);
     this.modalOpen.set(true);
   }
 
+  isPayoutSelected(id: string): boolean {
+    return this.payoutSelectedIds()[id] !== false;
+  }
+
+  togglePayoutSelection(id: string): void {
+    this.payoutSelectedIds.update((map) => ({ ...map, [id]: !this.isPayoutSelected(id) }));
+  }
+
+  selectAllPayoutItems(): void {
+    const selected: Record<string, boolean> = {};
+    for (const item of this.inVaultItems()) selected[item.id] = true;
+    this.payoutSelectedIds.set(selected);
+  }
+
+  clearPayoutSelection(): void {
+    const selected: Record<string, boolean> = {};
+    for (const item of this.inVaultItems()) selected[item.id] = false;
+    this.payoutSelectedIds.set(selected);
+  }
+
   confirmPayout(dateIso: string): void {
-    const items = this.inVaultItems();
+    const items = this.selectedPayoutItems();
     if (!items.length) return;
     const record: PayoutRecord = {
       id: `PAY_${Date.now()}`,
@@ -169,6 +227,7 @@ export class VaultStateService {
     };
     this.payoutHistory.update((list) => [...list, record]);
     this.modalOpen.set(false);
+    this.payoutSelectedIds.set({});
     this.persist();
   }
 

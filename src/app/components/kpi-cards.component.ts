@@ -127,8 +127,9 @@ import { dateInputToIso, formatDate, formatMoney, toDateInputValue } from '../ut
       <div class="fixed inset-0 z-[60] flex items-end justify-center bg-slate-900/40 p-0 sm:items-center sm:p-4">
         <div class="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl border border-slate-200 bg-white p-4 shadow-xl sm:max-w-lg sm:rounded-2xl sm:p-6" role="dialog" aria-modal="true">
           <h3 class="text-lg font-semibold">استلام وتصفير الخزنة</h3>
-          <p class="mt-2 text-sm text-slate-500">سيتم تسجيل البنود المحددة كمستلمة وتصفير الرصيد.</p>
-          <p class="mt-4 text-2xl font-semibold">{{ money(vault.vaultBalance()) }}</p>
+          <p class="mt-2 text-sm text-slate-500">البنود المحدّدة هتتسجل كمستلمة. اللي تشيل التحديد هيفضل في الخزنة كمستحق لم يُستلم بعد.</p>
+          <p class="mt-4 text-2xl font-semibold">{{ money(vault.selectedPayoutBalance()) }}</p>
+          <p class="mt-1 text-xs text-slate-500">{{ vault.selectedPayoutCount() }} من {{ vault.vaultCount() }} بند محدد للاستلام</p>
           <label class="mt-4 block text-sm text-slate-600">
             تاريخ الاستلام
             <input
@@ -148,22 +149,70 @@ import { dateInputToIso, formatDate, formatMoney, toDateInputValue } from '../ut
               (input)="vault.payoutNote.set(inputValue($event))"
             />
           </label>
-          <button type="button" class="mt-4 text-sm text-slate-600 underline" (click)="vault.previewOpen.set(!vault.previewOpen())">
-            {{ vault.previewOpen() ? 'إخفاء البنود' : 'عرض البنود (' + vault.vaultCount() + ')' }}
-          </button>
+          <div class="mt-4 flex flex-wrap items-center justify-between gap-2">
+            <button type="button" class="text-sm text-slate-600 underline" (click)="vault.previewOpen.set(!vault.previewOpen())">
+              {{ vault.previewOpen() ? 'إخفاء البنود' : 'عرض البنود (' + vault.vaultCount() + ')' }}
+            </button>
+            @if (vault.previewOpen()) {
+              <div class="flex items-center gap-3 text-xs">
+                <button type="button" class="text-emerald-700 underline" (click)="vault.selectAllPayoutItems()">تحديد الكل</button>
+                <button type="button" class="text-slate-500 underline" (click)="vault.clearPayoutSelection()">إلغاء التحديد</button>
+              </div>
+            }
+          </div>
           @if (vault.previewOpen()) {
-            <ul class="mt-3 max-h-48 space-y-2 overflow-y-auto rounded-xl border border-slate-100 p-3 text-sm">
-              @for (item of vault.inVaultItems(); track item.id) {
-                <li class="flex items-center justify-between gap-3">
-                  <span>{{ item.clientName }} · {{ item.unitNumber }} · {{ item.label }}</span>
-                  <span class="shrink-0 font-medium">{{ money(item.partnerShare) }}</span>
+            <input
+              type="search"
+              class="mt-3 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
+              placeholder="بحث بالاسم أو رقم الشقة…"
+              [value]="vault.payoutSearch()"
+              (input)="vault.payoutSearch.set(inputValue($event))"
+            />
+            <ul class="mt-2 max-h-56 space-y-1 overflow-y-auto rounded-xl border border-slate-100 p-2 text-sm">
+              @for (item of vault.filteredPayoutItems(); track item.id) {
+                <li>
+                  <label class="flex cursor-pointer items-start gap-3 rounded-lg px-2 py-2 hover:bg-slate-50">
+                    <input
+                      type="checkbox"
+                      class="mt-0.5 accent-emerald-700"
+                      [checked]="vault.isPayoutSelected(item.id)"
+                      (change)="vault.togglePayoutSelection(item.id)"
+                    />
+                    <span class="min-w-0 flex-1 text-slate-800">{{ item.clientName }} · {{ item.unitNumber }} · {{ item.label }}</span>
+                    <span class="shrink-0 font-medium tabular-nums">{{ money(item.partnerShare) }}</span>
+                  </label>
                 </li>
+              } @empty {
+                <li class="px-2 py-4 text-center text-xs text-slate-500">لا توجد نتائج للبحث</li>
               }
             </ul>
+            @if (vault.unselectedPayoutItems().length) {
+              <div class="mt-3 rounded-xl border border-amber-200 bg-amber-50/80 p-3">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <p class="text-sm font-medium text-amber-900">
+                    غير محدد — هيبقى في الخزنة ({{ vault.unselectedPayoutItems().length }})
+                  </p>
+                  <p class="text-sm font-semibold tabular-nums text-amber-950">{{ money(vault.unselectedPayoutBalance()) }}</p>
+                </div>
+                <ul class="mt-2 max-h-36 space-y-1 overflow-y-auto text-sm">
+                  @for (item of vault.unselectedPayoutItems(); track item.id) {
+                    <li class="flex items-start justify-between gap-3 rounded-lg px-1 py-1.5 text-amber-950/90">
+                      <span class="min-w-0">{{ item.clientName }} · {{ item.unitNumber }} · {{ item.label }}</span>
+                      <span class="shrink-0 font-medium tabular-nums">{{ money(item.partnerShare) }}</span>
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
           }
           <div class="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <button type="button" class="min-h-11 rounded-xl border border-slate-200 px-4 py-3 text-sm sm:py-2" (click)="vault.modalOpen.set(false)">إلغاء</button>
-            <button type="button" class="min-h-11 rounded-xl bg-emerald-700 px-4 py-3 text-sm text-white sm:py-2" (click)="confirm()">تأكيد الاستلام</button>
+            <button
+              type="button"
+              class="min-h-11 rounded-xl bg-emerald-700 px-4 py-3 text-sm text-white sm:py-2 disabled:cursor-not-allowed disabled:opacity-40"
+              [disabled]="vault.selectedPayoutCount() === 0"
+              (click)="confirm()"
+            >تأكيد الاستلام</button>
           </div>
         </div>
       </div>
