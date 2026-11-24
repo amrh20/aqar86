@@ -10,7 +10,7 @@ import { scheduleBadgeClass } from '../utils/schedule-labels';
   template: `
     <section>
       <div class="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-12">
-        <article class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-r-4 border-emerald-200/90 border-r-emerald-500 bg-gradient-to-bl from-emerald-50/90 via-white to-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md lg:col-span-7">
+        <article class="flex flex-col gap-4 rounded-xl border border-r-4 border-emerald-200/90 border-r-emerald-500 bg-gradient-to-bl from-emerald-50/90 via-white to-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-5 lg:col-span-7 lg:flex-row lg:items-center lg:justify-between">
           <div class="flex min-w-0 items-start gap-3">
             <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
               <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -25,14 +25,12 @@ import { scheduleBadgeClass } from '../utils/schedule-labels';
             </div>
           </div>
           @if (!vault.isReadOnly()) {
-            <div class="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                class="h-10 rounded-lg bg-emerald-600 px-4 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
-                [disabled]="vault.vaultBalance() === 0"
-                (click)="vault.openPayoutModal(today())"
-              >استلام وتصفير الخزنة</button>
-            </div>
+            <button
+              type="button"
+              class="h-11 w-full rounded-lg bg-emerald-600 px-4 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40 sm:h-10 lg:w-auto"
+              [disabled]="vault.vaultBalance() === 0"
+              (click)="vault.openPayoutModal(today())"
+            >استلام وتصفير الخزنة</button>
           }
         </article>
 

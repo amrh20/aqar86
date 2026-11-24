@@ -43,69 +43,101 @@
     </div>
   }
   @if (auth.isViewer()) {
-    <p class="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm text-amber-900">أنت تتصفح النظام بصلاحية (مشاهدة فقط) — لا يمكن تعديل البيانات أو رفع ملفات.</p>
+    <p class="border-b border-amber-200 bg-amber-50 px-3 py-2 text-center text-xs text-amber-900 sm:px-4 sm:text-sm">
+      <span class="sm:hidden">صلاحية مشاهدة فقط — بدون تعديل أو رفع ملفات</span>
+      <span class="hidden sm:inline">أنت تتصفح النظام بصلاحية (مشاهدة فقط) — لا يمكن تعديل البيانات أو رفع ملفات.</span>
+    </p>
   }
   <header class="safe-top sticky top-0 z-30 border-b border-slate-200/80 bg-white">
-    <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-      <div class="min-w-0">
-        <h1 class="truncate text-lg font-bold tracking-tight text-slate-900">متابعة أرباح قطعة 86</h1>
-        <p class="mt-0.5 flex min-w-0 items-center gap-2 text-xs text-slate-500">
-          @if (store.data(); as data) {
-            <span class="shrink-0">آخر رفع: {{ formatDate(data.uploadedAt) }}</span>
-            <span class="shrink-0 text-slate-300" aria-hidden="true">·</span>
-            <span dir="ltr" class="truncate rounded bg-slate-100 px-2 py-0.5 font-mono text-[11px] text-slate-600">{{ data.fileName }}</span>
-          } @else {
-            لم يتم رفع ملف بعد
-          }
-        </p>
-      </div>
-      <div class="flex shrink-0 items-center gap-2">
-        <span class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-2.5 py-1 text-[11px] text-slate-600">
-          <span class="h-1.5 w-1.5 rounded-full" [class.bg-emerald-500]="workspace.syncStatus() === 'synced'" [class.bg-amber-400]="workspace.syncStatus() === 'saving'" [class.bg-rose-500]="workspace.syncStatus() === 'error'" [class.animate-pulse]="workspace.syncStatus() === 'saving'"></span>
-          @if (workspace.syncStatus() === 'saving') { جاري الحفظ... }
-          @else if (workspace.syncStatus() === 'error') { تعذر الحفظ على السيرفر }
-          @else { متزامن مع السيرفر }
-        </span>
-        <div class="hidden text-left sm:block">
-          <p class="max-w-[10rem] truncate text-xs font-medium text-slate-800">{{ auth.currentUser()?.name }}</p>
-          <p class="max-w-[10rem] truncate text-[11px] text-slate-400" dir="ltr">{{ auth.currentUser()?.email }}</p>
-        </div>
-        @if (auth.isAdmin()) {
-          <span class="rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-800">مدير</span>
-        } @else {
-          <span class="rounded-full bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-800">مشاهدة فقط</span>
-        }
-        <button type="button" class="h-9 rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700 hover:bg-slate-50" (click)="logout()">تسجيل الخروج</button>
-        <details class="relative">
-          <summary class="inline-flex h-9 cursor-pointer list-none items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
-            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            </svg>
-            نسخة احتياطية
-          </summary>
-          <div class="absolute end-0 z-20 mt-2 w-56 rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
-            <button type="button" class="block min-h-11 w-full rounded-lg px-3 py-2.5 text-right text-sm hover:bg-slate-50" (click)="exportBackup()">تصدير نسخة الخزنة</button>
-            <button type="button" class="block min-h-11 w-full rounded-lg px-3 py-2.5 text-right text-sm hover:bg-slate-50" (click)="exportLatestSiteState()">
-              تصدير ملف تحديث الموقع (latest-state.json)
-            </button>
-            @if (auth.isAdmin()) {
-              <label class="block min-h-11 cursor-pointer rounded-lg px-3 py-2.5 text-sm hover:bg-slate-50">
-                استيراد نسخة احتياطية
-                <input class="hidden" type="file" accept=".json,application/json" (change)="onImport($event)" />
-              </label>
+    <div class="mx-auto max-w-7xl space-y-2.5 px-3 py-3 sm:px-6 sm:py-3.5 lg:px-8">
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0 flex-1">
+          <h1 class="truncate text-base font-bold tracking-tight text-slate-900 sm:text-lg">متابعة أرباح قطعة 86</h1>
+          <p class="mt-0.5 truncate text-[11px] text-slate-500 sm:text-xs">
+            @if (store.data(); as data) {
+              <span>آخر رفع: {{ formatDate(data.uploadedAt) }}</span>
+              <span class="mx-1 hidden text-slate-300 sm:inline" aria-hidden="true">·</span>
+              <span dir="ltr" class="hidden rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] text-slate-600 sm:inline">{{ data.fileName }}</span>
+            } @else {
+              لم يتم رفع ملف بعد
             }
-          </div>
-        </details>
-        @if (auth.isAdmin()) {
-        <label class="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-medium text-white shadow-sm hover:bg-slate-800">
-          <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <path d="M17 8l-5-5-5 5M12 3v12" />
-          </svg>
-          {{ store.parsing() ? 'جارٍ القراءة…' : 'رفع ملف الإكسيل' }}
-          <input class="hidden" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" (change)="onInput($event)" />
-        </label>
-        }
+          </p>
+        </div>
+
+        <div class="flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <span
+            class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 text-[11px] text-slate-600 sm:px-2.5"
+            [attr.title]="workspace.syncStatus() === 'saving' ? 'جاري الحفظ...' : workspace.syncStatus() === 'error' ? 'تعذر الحفظ على السيرفر' : 'متزامن مع السيرفر'"
+          >
+            <span
+              class="h-1.5 w-1.5 rounded-full"
+              [class.bg-emerald-500]="workspace.syncStatus() === 'synced'"
+              [class.bg-amber-400]="workspace.syncStatus() === 'saving'"
+              [class.bg-rose-500]="workspace.syncStatus() === 'error'"
+              [class.animate-pulse]="workspace.syncStatus() === 'saving'"
+            ></span>
+            <span class="hidden sm:inline">
+              @if (workspace.syncStatus() === 'saving') { جاري الحفظ... }
+              @else if (workspace.syncStatus() === 'error') { تعذر الحفظ }
+              @else { متزامن }
+            </span>
+          </span>
+
+          @if (auth.isAdmin()) {
+            <label class="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-slate-900 px-2.5 text-xs font-medium text-white shadow-sm hover:bg-slate-800 sm:px-3.5">
+              <svg class="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <path d="M17 8l-5-5-5 5M12 3v12" />
+              </svg>
+              <span class="sm:hidden">{{ store.parsing() ? '…' : 'رفع' }}</span>
+              <span class="hidden sm:inline">{{ store.parsing() ? 'جارٍ القراءة…' : 'رفع ملف الإكسيل' }}</span>
+              <input class="hidden" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" (change)="onInput($event)" />
+            </label>
+          }
+
+          <details class="relative">
+            <summary
+              class="inline-flex h-9 cursor-pointer list-none items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50 sm:px-3"
+              aria-label="القائمة"
+            >
+              <svg class="h-4 w-4 sm:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="5" r="1" />
+                <circle cx="12" cy="12" r="1" />
+                <circle cx="12" cy="19" r="1" />
+              </svg>
+              <span class="hidden sm:inline">الحساب</span>
+              @if (auth.isAdmin()) {
+                <span class="hidden rounded-full bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-800 md:inline">مدير</span>
+              } @else {
+                <span class="hidden rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-800 md:inline">مشاهدة</span>
+              }
+            </summary>
+            <div class="absolute end-0 z-20 mt-2 w-[min(18rem,calc(100vw-1.5rem))] rounded-xl border border-slate-200 bg-white p-2 shadow-lg">
+              <div class="border-b border-slate-100 px-3 py-2.5">
+                <p class="truncate text-sm font-medium text-slate-900">{{ auth.currentUser()?.name }}</p>
+                <p class="mt-0.5 truncate text-[11px] text-slate-400" dir="ltr">{{ auth.currentUser()?.email }}</p>
+                <p class="mt-2">
+                  @if (auth.isAdmin()) {
+                    <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-800">مدير</span>
+                  } @else {
+                    <span class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800">مشاهدة فقط</span>
+                  }
+                </p>
+              </div>
+              <button type="button" class="mt-1 block min-h-11 w-full rounded-lg px-3 py-2.5 text-right text-sm hover:bg-slate-50" (click)="exportBackup()">تصدير نسخة الخزنة</button>
+              <button type="button" class="block min-h-11 w-full rounded-lg px-3 py-2.5 text-right text-sm hover:bg-slate-50" (click)="exportLatestSiteState()">
+                تصدير latest-state.json
+              </button>
+              @if (auth.isAdmin()) {
+                <label class="block min-h-11 cursor-pointer rounded-lg px-3 py-2.5 text-sm hover:bg-slate-50">
+                  استيراد نسخة احتياطية
+                  <input class="hidden" type="file" accept=".json,application/json" (change)="onImport($event)" />
+                </label>
+              }
+              <button type="button" class="mt-1 block min-h-11 w-full rounded-lg px-3 py-2.5 text-right text-sm text-rose-700 hover:bg-rose-50" (click)="logout()">تسجيل الخروج</button>
+            </div>
+          </details>
+        </div>
       </div>
     </div>
   </header>
