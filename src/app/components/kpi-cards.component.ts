@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { DashboardStore } from '../services/dashboard-store.service';
 import { VaultStateService } from '../services/vault-state.service';
 import { dateInputToIso, formatDate, formatMoney, toDateInputValue } from '../utils/format';
+import { scheduleBadgeClass } from '../utils/schedule-labels';
 
 @Component({
   selector: 'app-kpi-cards',
@@ -23,19 +24,16 @@ import { dateInputToIso, formatDate, formatMoney, toDateInputValue } from '../ut
               <p class="mt-2 inline-flex rounded-md bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">{{ vault.vaultCount() }} بند محدد ولم يُستلم بعد</p>
             </div>
           </div>
-          <div class="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              class="h-10 rounded-lg bg-emerald-600 px-4 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
-              [disabled]="vault.vaultBalance() === 0"
-              (click)="vault.openPayoutModal(today())"
-            >استلام وتصفير الخزنة</button>
-            @if (vault.payoutHistory().length) {
-              <button type="button" class="h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 hover:bg-slate-50" (click)="vault.undoOpen.set(true)">
-                تراجع عن آخر استلام
-              </button>
-            }
-          </div>
+          @if (!vault.isReadOnly()) {
+            <div class="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                class="h-10 rounded-lg bg-emerald-600 px-4 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40"
+                [disabled]="vault.vaultBalance() === 0"
+                (click)="vault.openPayoutModal(today())"
+              >استلام وتصفير الخزنة</button>
+            </div>
+          }
         </article>
 
         <article class="flex flex-col justify-between rounded-xl border border-r-4 border-violet-200/80 border-r-violet-500 bg-gradient-to-bl from-violet-50/80 via-white to-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md lg:col-span-5">
@@ -178,7 +176,13 @@ import { dateInputToIso, formatDate, formatMoney, toDateInputValue } from '../ut
                       [checked]="vault.isPayoutSelected(item.id)"
                       (change)="vault.togglePayoutSelection(item.id)"
                     />
-                    <span class="min-w-0 flex-1 text-slate-800">{{ item.clientName }} · {{ item.unitNumber }} · {{ item.label }}</span>
+                    <span class="min-w-0 flex-1">
+                      <span class="block text-slate-800">{{ item.clientName }} · {{ item.unitNumber }}</span>
+                      <span class="mt-1 flex flex-wrap items-center gap-2">
+                        <span class="rounded-full px-2 py-0.5 text-xs font-medium" [class]="badge(item.label)">{{ item.label }}</span>
+                        <span class="text-xs text-slate-500">استحقاق {{ date(item.dueDate) }}</span>
+                      </span>
+                    </span>
                     <span class="shrink-0 font-medium tabular-nums">{{ money(item.partnerShare) }}</span>
                   </label>
                 </li>
@@ -197,7 +201,13 @@ import { dateInputToIso, formatDate, formatMoney, toDateInputValue } from '../ut
                 <ul class="mt-2 max-h-36 space-y-1 overflow-y-auto text-sm">
                   @for (item of vault.unselectedPayoutItems(); track item.id) {
                     <li class="flex items-start justify-between gap-3 rounded-lg px-1 py-1.5 text-amber-950/90">
-                      <span class="min-w-0">{{ item.clientName }} · {{ item.unitNumber }} · {{ item.label }}</span>
+                      <span class="min-w-0">
+                        <span class="block">{{ item.clientName }} · {{ item.unitNumber }}</span>
+                        <span class="mt-1 flex flex-wrap items-center gap-2">
+                          <span class="rounded-full px-2 py-0.5 text-xs font-medium" [class]="badge(item.label)">{{ item.label }}</span>
+                          <span class="text-xs text-amber-900/70">استحقاق {{ date(item.dueDate) }}</span>
+                        </span>
+                      </span>
                       <span class="shrink-0 font-medium tabular-nums">{{ money(item.partnerShare) }}</span>
                     </li>
                   }
@@ -252,7 +262,11 @@ import { dateInputToIso, formatDate, formatMoney, toDateInputValue } from '../ut
           @if (pending.item; as item) {
             <div class="mt-4 rounded-xl border border-slate-100 bg-slate-50 px-3 py-3 text-sm">
               <p class="font-medium text-slate-900">{{ item.clientName }} · شقة {{ item.unitNumber }}</p>
-              <p class="mt-1 text-slate-600">{{ item.label }} · نسبتك {{ money(item.partnerShare) }}</p>
+              <p class="mt-1 flex flex-wrap items-center gap-2 text-slate-600">
+                <span class="rounded-full px-2 py-0.5 text-xs font-medium" [class]="badge(item.label)">{{ item.label }}</span>
+                <span>استحقاق {{ date(item.dueDate) }}</span>
+                <span>· نسبتك {{ money(item.partnerShare) }}</span>
+              </p>
             </div>
           }
           <div class="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -277,6 +291,7 @@ export class KpiCardsComponent {
   readonly vault = inject(VaultStateService);
   readonly money = formatMoney;
   readonly date = formatDate;
+  readonly badge = scheduleBadgeClass;
   readonly today = toDateInputValue;
 
   inputValue(event: Event): string {

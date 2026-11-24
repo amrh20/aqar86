@@ -117,7 +117,9 @@ import { scheduleBadgeClass } from '../utils/schedule-labels';
                             type="checkbox"
                             class="accent-slate-900"
                             [checked]="vault.isChecked(part.id)"
-                            [disabled]="vault.lifecycle(part.id) === 'settled'"
+                            [disabled]="vault.isReadOnly() || vault.lifecycle(part.id) === 'settled'"
+                            [class.cursor-not-allowed]="vault.isReadOnly()"
+                            [class.opacity-75]="vault.isReadOnly()"
                             (click)="$event.preventDefault(); vault.toggle(part.id)"
                           />
                           <span class="text-xs text-slate-600">{{ kindLabel(part.scheduleLabel) }}</span>
@@ -165,7 +167,9 @@ import { scheduleBadgeClass } from '../utils/schedule-labels';
                                 type="checkbox"
                                 class="accent-slate-900"
                                 [checked]="vault.isChecked(part.id)"
-                                [disabled]="vault.lifecycle(part.id) === 'settled'"
+                                [disabled]="vault.isReadOnly() || vault.lifecycle(part.id) === 'settled'"
+                            [class.cursor-not-allowed]="vault.isReadOnly()"
+                            [class.opacity-75]="vault.isReadOnly()"
                                 (click)="$event.preventDefault(); vault.toggle(part.id)"
                                 [title]="kindLabel(part.scheduleLabel)"
                               />

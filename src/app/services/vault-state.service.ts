@@ -2,15 +2,23 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { ItemLifecycle, PayoutRecord, TrackedItem, VaultBackup } from '../models/dashboard.models';
 import { DashboardStore } from './dashboard-store.service';
 import { downPaymentLabel } from '../utils/schedule-labels';
-import { writeLocalUpdatedAt } from './state-meta';
 import { ToastService } from './toast.service';
-
-const STORAGE_KEY = 'piece86.vault.v1';
+import { AuthService } from './auth.service';
 
 @Injectable({ providedIn: 'root' })
 export class VaultStateService {
   private readonly store = inject(DashboardStore);
   private readonly toast = inject(ToastService);
+  private readonly auth = inject(AuthService);
+  private sync: (() => void) | null = null;
+
+  bindSync(sync: () => void): void {
+    this.sync = sync;
+  }
+
+  isReadOnly(): boolean {
+    return this.auth.isViewer();
+  }
 
   readonly manualPaidMap = signal<Record<string, boolean>>({});
   readonly payoutHistory = signal<PayoutRecord[]>([]);
@@ -135,12 +143,6 @@ export class VaultStateService {
     });
   });
 
-  constructor() {
-    const saved = this.read();
-    this.manualPaidMap.set(saved.manualPaidMap);
-    this.payoutHistory.set(saved.payoutHistory);
-  }
-
   isChecked(id: string): boolean {
     if (this.settledById().has(id)) return true;
     const map = this.manualPaidMap();
@@ -159,14 +161,14 @@ export class VaultStateService {
 
   /** يطلب تأكيد قبل تغيير حالة التسديد */
   toggle(id: string): void {
-    if (this.settledById().has(id)) return;
+    if (this.isReadOnly() || this.settledById().has(id)) return;
     this.pendingToggleId.set(id);
   }
 
   confirmToggle(): void {
     const id = this.pendingToggleId();
     this.pendingToggleId.set(null);
-    if (!id || this.settledById().has(id)) return;
+    if (this.isReadOnly() || !id || this.settledById().has(id)) return;
 
     const next = !this.isChecked(id);
     this.manualPaidMap.update((map) => ({ ...map, [id]: next }));
@@ -183,7 +185,7 @@ export class VaultStateService {
   }
 
   openPayoutModal(today: string): void {
-    if (this.vaultBalance() === 0) return;
+    if (this.isReadOnly() || this.vaultBalance() === 0) return;
     this.payoutDate.set(today);
     this.payoutNote.set('');
     this.payoutSearch.set('');
@@ -215,6 +217,7 @@ export class VaultStateService {
   }
 
   confirmPayout(dateIso: string): void {
+    if (this.isReadOnly()) return;
     const items = this.selectedPayoutItems();
     if (!items.length) return;
     const record: PayoutRecord = {
@@ -232,6 +235,7 @@ export class VaultStateService {
   }
 
   undoLastPayout(): void {
+    if (this.isReadOnly()) return;
     const list = this.payoutHistory();
     if (!list.length) return;
     this.payoutHistory.set(list.slice(0, -1));
@@ -259,6 +263,7 @@ export class VaultStateService {
   }
 
   importJson(raw: string): void {
+    if (this.isReadOnly()) return;
     const parsed = JSON.parse(raw) as Partial<VaultBackup>;
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
       throw new Error('ملف النسخة الاحتياطية غير صالح');
@@ -274,27 +279,8 @@ export class VaultStateService {
     this.persist();
   }
 
-  private persist(updatedAt?: string): void {
-    const payload: VaultBackup = {
-      manualPaidMap: this.manualPaidMap(),
-      payoutHistory: this.payoutHistory(),
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-    writeLocalUpdatedAt(updatedAt ?? new Date().toISOString());
-  }
-
-  private read(): VaultBackup {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return { manualPaidMap: {}, payoutHistory: [] };
-      const parsed = JSON.parse(raw) as VaultBackup;
-      return {
-        manualPaidMap: parsed.manualPaidMap ?? {},
-        payoutHistory: parsed.payoutHistory ?? [],
-      };
-    } catch {
-      return { manualPaidMap: {}, payoutHistory: [] };
-    }
+  private persist(_updatedAt?: string): void {
+    this.sync?.();
   }
 }
 

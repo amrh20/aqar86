@@ -130,7 +130,7 @@ import { downPaymentLabel, isGarageLabel, scheduleBadgeClass } from '../utils/sc
             @if (showDownPayment(contract)) {
               <div class="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
                 <div class="flex items-start gap-3">
-                  <input type="checkbox" class="mt-1 accent-slate-900" [checked]="vault.isChecked(contract.downPaymentId)" [disabled]="vault.lifecycle(contract.downPaymentId) === 'settled'" (click)="$event.preventDefault(); vault.toggle(contract.downPaymentId)" />
+                  <input type="checkbox" class="mt-1 accent-slate-900" [checked]="vault.isChecked(contract.downPaymentId)" [disabled]="vault.isReadOnly() || vault.lifecycle(contract.downPaymentId) === 'settled'" [class.cursor-not-allowed]="vault.isReadOnly()" [class.opacity-75]="vault.isReadOnly()" (click)="$event.preventDefault(); vault.toggle(contract.downPaymentId)" />
                   <div class="min-w-0 flex-1">
                     <div class="font-medium text-slate-900">
                       <span class="rounded-full px-2 py-0.5 text-xs" [class]="badge(downLabel)">{{ downLabel }}</span>
@@ -166,7 +166,7 @@ import { downPaymentLabel, isGarageLabel, scheduleBadgeClass } from '../utils/sc
                 <div class="mt-2 space-y-2">
                   @for (item of group.items; track item.id) {
                     <div class="flex items-start gap-3 border-t border-slate-100 pt-2">
-                      <input type="checkbox" class="mt-1 accent-slate-900" [checked]="vault.isChecked(item.id)" [disabled]="vault.lifecycle(item.id) === 'settled'" (click)="$event.preventDefault(); vault.toggle(item.id)" />
+                      <input type="checkbox" class="mt-1 accent-slate-900" [checked]="vault.isChecked(item.id)" [disabled]="vault.isReadOnly() || vault.lifecycle(item.id) === 'settled'" [class.cursor-not-allowed]="vault.isReadOnly()" [class.opacity-75]="vault.isReadOnly()" (click)="$event.preventDefault(); vault.toggle(item.id)" />
                       <div class="min-w-0 flex-1">
                         <span class="rounded-full px-2 py-0.5 text-xs" [class]="badge(item.scheduleLabel)">{{ item.scheduleLabel }}</span>
                         <div class="mt-1 grid grid-cols-2 gap-2 text-xs text-slate-600">
@@ -202,7 +202,7 @@ import { downPaymentLabel, isGarageLabel, scheduleBadgeClass } from '../utils/sc
               @if (showDownPayment(contract)) {
                 <tr class="border-t border-slate-100">
                   <td class="py-2">
-                    <input type="checkbox" class="accent-slate-900" [checked]="vault.isChecked(contract.downPaymentId)" [disabled]="vault.lifecycle(contract.downPaymentId) === 'settled'" (click)="$event.preventDefault(); vault.toggle(contract.downPaymentId)" />
+                    <input type="checkbox" class="accent-slate-900" [checked]="vault.isChecked(contract.downPaymentId)" [disabled]="vault.isReadOnly() || vault.lifecycle(contract.downPaymentId) === 'settled'" [class.cursor-not-allowed]="vault.isReadOnly()" [class.opacity-75]="vault.isReadOnly()" (click)="$event.preventDefault(); vault.toggle(contract.downPaymentId)" />
                   </td>
                   <td class="py-2">
                     <span class="rounded-full px-2 py-0.5 text-xs" [class]="badge(downLabel)">{{ downLabel }}</span>
@@ -223,7 +223,7 @@ import { downPaymentLabel, isGarageLabel, scheduleBadgeClass } from '../utils/sc
                 @for (item of group.items; track item.id; let idx = $index) {
                   <tr class="border-t border-slate-100" [class]="isGarageLabel(item.scheduleLabel) ? 'border-t border-slate-100 bg-violet-50' : 'border-t border-slate-100'">
                     <td class="py-2">
-                      <input type="checkbox" class="accent-slate-900" [checked]="vault.isChecked(item.id)" [disabled]="vault.lifecycle(item.id) === 'settled'" (click)="$event.preventDefault(); vault.toggle(item.id)" />
+                      <input type="checkbox" class="accent-slate-900" [checked]="vault.isChecked(item.id)" [disabled]="vault.isReadOnly() || vault.lifecycle(item.id) === 'settled'" [class.cursor-not-allowed]="vault.isReadOnly()" [class.opacity-75]="vault.isReadOnly()" (click)="$event.preventDefault(); vault.toggle(item.id)" />
                     </td>
                     <td class="py-2">
                       <span class="rounded-full px-2 py-0.5 text-xs font-medium" [class]="badge(item.scheduleLabel)">{{ item.scheduleLabel }}</span>

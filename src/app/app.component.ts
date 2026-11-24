@@ -1,5 +1,6 @@
 import { NgClass } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { KpiCardsComponent } from './components/kpi-cards.component';
 import { CashflowTabComponent } from './components/cashflow-tab.component';
 import { ClientsTabComponent } from './components/clients-tab.component';
@@ -8,10 +9,11 @@ import { MyVaultTabComponent } from './components/my-vault-tab.component';
 import { OverdueTabComponent } from './components/overdue-tab.component';
 import { GaragesTabComponent } from './components/garages-tab.component';
 import { ToastHostComponent } from './components/toast-host.component';
+import { AuthService } from './services/auth.service';
 import { DashboardStore } from './services/dashboard-store.service';
 import { ExcelParserService } from './services/excel-parser.service';
-import { LatestStateService } from './services/latest-state.service';
 import { VaultStateService } from './services/vault-state.service';
+import { WorkspaceApiService } from './services/workspace-api.service';
 import { formatDate, formatMoney, toDateInputValue } from './utils/format';
 
 type Tab = 'cashflow' | 'clients' | 'myvault' | 'overdue' | 'garages' | 'withdrawals';
@@ -21,6 +23,7 @@ type Tab = 'cashflow' | 'clients' | 'myvault' | 'overdue' | 'garages' | 'withdra
   standalone: true,
   imports: [
     NgClass,
+    FormsModule,
     KpiCardsComponent,
     CashflowTabComponent,
     ClientsTabComponent,
@@ -36,14 +39,56 @@ export class AppComponent {
   readonly store = inject(DashboardStore);
   readonly parser = inject(ExcelParserService);
   readonly vault = inject(VaultStateService);
-  private readonly latestState = inject(LatestStateService);
+  readonly auth = inject(AuthService);
+  readonly workspace = inject(WorkspaceApiService);
   readonly tab = signal<Tab>('cashflow');
   readonly dragging = signal(false);
+  readonly email = signal('');
+  readonly password = signal('');
+  readonly importing = signal(false);
   readonly formatDate = formatDate;
   readonly formatMoney = formatMoney;
 
+  readonly blockingMessage = computed(() => {
+    if (this.auth.authLoading()) return 'جاري التحقق من الجلسة…';
+    if (this.auth.loggingIn()) return 'جاري تسجيل الدخول…';
+    if (this.workspace.loading()) return 'جاري تحميل البيانات من السيرفر…';
+    if (this.store.parsing()) return 'جارٍ قراءة ملف الإكسيل…';
+    if (this.importing()) return 'جاري استيراد النسخة الاحتياطية…';
+    return null;
+  });
+
+  readonly saving = computed(() => this.workspace.syncStatus() === 'saving');
+
+  loginButtonLabel(): string {
+    return this.auth.loggingIn() ? 'جاري الدخول…' : 'تسجيل الدخول';
+  }
+
+  async submitLogin(): Promise<void> {
+    this.workspace.loading.set(true);
+    const ok = await this.auth.login(this.email(), this.password());
+    if (!ok) {
+      this.workspace.loading.set(false);
+      return;
+    }
+    this.password.set('');
+    try {
+      await this.workspace.load();
+    } catch {
+      this.workspace.loading.set(false);
+      this.workspace.syncStatus.set('error');
+    }
+  }
+
+  logout(): void {
+    this.auth.logout();
+    this.store.clear();
+    this.vault.replaceVaultState({}, []);
+    this.workspace.syncStatus.set('synced');
+  }
+
   async onFile(file: File | undefined): Promise<void> {
-    if (!file) return;
+    if (!file || this.auth.isViewer()) return;
     this.store.parsing.set(true);
     this.store.error.set(null);
     try {
@@ -79,7 +124,17 @@ export class AppComponent {
   }
 
   exportLatestSiteState(): void {
-    const payload = this.latestState.exportSiteState();
+    const data = this.store.data();
+    const contracts = data?.contracts ?? [];
+    const payload = {
+      updatedAt: new Date().toISOString(),
+      lastFileName: data?.fileName ?? '',
+      contracts,
+      installments: contracts.flatMap((contract) => contract.installments ?? []),
+      excelWithdrawals: data?.withdrawals ?? [],
+      manualPaidMap: this.vault.manualPaidMap(),
+      payoutHistory: this.vault.payoutHistory(),
+    };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -92,11 +147,15 @@ export class AppComponent {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     input.value = '';
-    if (!file) return;
+    if (!file || this.auth.isViewer()) return;
+    this.importing.set(true);
+    this.vault.importError.set(null);
     try {
       this.vault.importJson(await file.text());
     } catch {
       this.vault.importError.set('تعذر استيراد النسخة الاحتياطية. تأكد أن الملف JSON صالح.');
+    } finally {
+      this.importing.set(false);
     }
   }
 }

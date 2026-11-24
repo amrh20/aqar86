@@ -1,5 +1,50 @@
-<div class="min-h-screen bg-slate-50/80 pb-4">
+@if (auth.authLoading() || (auth.loggingIn() && !auth.currentUser()) || (workspace.loading() && !auth.currentUser())) {
+  <div class="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-50 px-4">
+    <span class="h-10 w-10 animate-spin rounded-full border-[3px] border-slate-200 border-t-slate-900" aria-hidden="true"></span>
+    <p class="text-sm text-slate-600">{{ blockingMessage() || 'جاري التحميل…' }}</p>
+  </div>
+} @else if (!auth.currentUser()) {
+  <div class="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+    <form class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm" (submit)="$event.preventDefault(); submitLogin()">
+      <h1 class="text-xl font-bold text-slate-900">متابعة أرباح قطعة 86</h1>
+      <p class="mt-1 text-sm text-slate-500">تسجيل الدخول للوصول إلى الخزنة والبيانات</p>
+      @if (auth.loginError(); as loginError) {
+        <p class="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{{ loginError }}</p>
+      }
+      <label class="mt-6 block text-sm font-medium text-slate-700">
+        البريد الإلكتروني
+        <input class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-slate-400" type="email" autocomplete="username" [ngModel]="email()" (ngModelChange)="email.set($event)" name="email" required />
+      </label>
+      <label class="mt-4 block text-sm font-medium text-slate-700">
+        كلمة المرور
+        <input class="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-slate-400" type="password" autocomplete="current-password" [ngModel]="password()" (ngModelChange)="password.set($event)" name="password" required />
+      </label>
+      <button type="submit" class="mt-6 h-11 w-full rounded-xl bg-slate-900 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-60" [disabled]="auth.loggingIn()">
+        {{ loginButtonLabel() }}
+      </button>
+    </form>
+  </div>
+} @else {
+<div class="relative min-h-screen bg-slate-50/80 pb-4">
   <app-toast-host />
+  @if (blockingMessage(); as message) {
+    <div class="fixed inset-0 z-[90] flex flex-col items-center justify-center gap-4 bg-slate-900/35 px-4 backdrop-blur-[1px]" role="status" aria-live="polite">
+      <div class="flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-white px-8 py-7 shadow-xl">
+        <span class="h-10 w-10 animate-spin rounded-full border-[3px] border-slate-200 border-t-slate-900" aria-hidden="true"></span>
+        <p class="text-sm font-medium text-slate-800">{{ message }}</p>
+      </div>
+    </div>
+  } @else if (saving()) {
+    <div class="pointer-events-none fixed inset-x-0 bottom-4 z-[90] flex justify-center px-4 sm:inset-x-auto sm:bottom-6 sm:end-6 sm:justify-end">
+      <div class="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3.5 py-2 text-xs font-medium text-amber-900 shadow-lg">
+        <span class="h-3.5 w-3.5 animate-spin rounded-full border-2 border-amber-200 border-t-amber-700" aria-hidden="true"></span>
+        جاري الحفظ على السيرفر…
+      </div>
+    </div>
+  }
+  @if (auth.isViewer()) {
+    <p class="border-b border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm text-amber-900">أنت تتصفح النظام بصلاحية (مشاهدة فقط) — لا يمكن تعديل البيانات أو رفع ملفات.</p>
+  }
   <header class="safe-top sticky top-0 z-30 border-b border-slate-200/80 bg-white">
     <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
       <div class="min-w-0">
@@ -15,6 +60,22 @@
         </p>
       </div>
       <div class="flex shrink-0 items-center gap-2">
+        <span class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 px-2.5 py-1 text-[11px] text-slate-600">
+          <span class="h-1.5 w-1.5 rounded-full" [class.bg-emerald-500]="workspace.syncStatus() === 'synced'" [class.bg-amber-400]="workspace.syncStatus() === 'saving'" [class.bg-rose-500]="workspace.syncStatus() === 'error'" [class.animate-pulse]="workspace.syncStatus() === 'saving'"></span>
+          @if (workspace.syncStatus() === 'saving') { جاري الحفظ... }
+          @else if (workspace.syncStatus() === 'error') { تعذر الحفظ على السيرفر }
+          @else { متزامن مع السيرفر }
+        </span>
+        <div class="hidden text-left sm:block">
+          <p class="max-w-[10rem] truncate text-xs font-medium text-slate-800">{{ auth.currentUser()?.name }}</p>
+          <p class="max-w-[10rem] truncate text-[11px] text-slate-400" dir="ltr">{{ auth.currentUser()?.email }}</p>
+        </div>
+        @if (auth.isAdmin()) {
+          <span class="rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-800">مدير</span>
+        } @else {
+          <span class="rounded-full bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-800">مشاهدة فقط</span>
+        }
+        <button type="button" class="h-9 rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700 hover:bg-slate-50" (click)="logout()">تسجيل الخروج</button>
         <details class="relative">
           <summary class="inline-flex h-9 cursor-pointer list-none items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
             <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -27,12 +88,15 @@
             <button type="button" class="block min-h-11 w-full rounded-lg px-3 py-2.5 text-right text-sm hover:bg-slate-50" (click)="exportLatestSiteState()">
               تصدير ملف تحديث الموقع (latest-state.json)
             </button>
-            <label class="block min-h-11 cursor-pointer rounded-lg px-3 py-2.5 text-sm hover:bg-slate-50">
-              استيراد
-              <input class="hidden" type="file" accept=".json,application/json" (change)="onImport($event)" />
-            </label>
+            @if (auth.isAdmin()) {
+              <label class="block min-h-11 cursor-pointer rounded-lg px-3 py-2.5 text-sm hover:bg-slate-50">
+                استيراد نسخة احتياطية
+                <input class="hidden" type="file" accept=".json,application/json" (change)="onImport($event)" />
+              </label>
+            }
           </div>
         </details>
+        @if (auth.isAdmin()) {
         <label class="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-medium text-white shadow-sm hover:bg-slate-800">
           <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -41,6 +105,7 @@
           {{ store.parsing() ? 'جارٍ القراءة…' : 'رفع ملف الإكسيل' }}
           <input class="hidden" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" (change)="onInput($event)" />
         </label>
+        }
       </div>
     </div>
   </header>
@@ -53,7 +118,12 @@
       <p class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{{ importError }}</p>
     }
 
-    @if (!store.data()) {
+    @if (workspace.loading() && !store.data()) {
+      <section class="flex flex-col items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-16 text-center shadow-sm">
+        <span class="h-9 w-9 animate-spin rounded-full border-[3px] border-slate-200 border-t-slate-900" aria-hidden="true"></span>
+        <p class="text-sm text-slate-600">جاري تحميل بيانات الخزنة…</p>
+      </section>
+    } @else if (!store.data()) {
       <section
         class="rounded-2xl border border-dashed bg-white px-4 py-12 text-center shadow-sm sm:rounded-3xl sm:px-6 sm:py-16"
         [class.border-indigo-300]="dragging()"
@@ -61,11 +131,11 @@
         [class.border-slate-300]="!dragging()"
         (dragover)="$event.preventDefault(); dragging.set(true)"
         (dragleave)="dragging.set(false)"
-        (drop)="onDrop($event)"
+        (drop)="auth.isAdmin() && onDrop($event)"
       >
         <h2 class="text-lg font-medium text-slate-800">ارفع ملف الخزينة</h2>
         <p class="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500">
-          اضغط لرفع ملف الإكسيل. يتم التحليل داخل المتصفح ويُحفظ محلياً على هذا الجهاز.
+          اضغط لرفع ملف الإكسيل. يتم التحليل داخل المتصفح ويُحفظ على السيرفر.
         </p>
       </section>
     } @else {
@@ -183,3 +253,4 @@
     }
   </main>
 </div>
+}

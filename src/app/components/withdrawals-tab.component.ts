@@ -9,7 +9,7 @@ import { formatDate, formatMoney } from '../utils/format';
   template: `
     <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <h2 class="text-base font-semibold text-slate-900">سجل الاستلام</h2>
-      @if (vault.payoutHistory().length) {
+      @if (!vault.isReadOnly() && vault.payoutHistory().length) {
         <button type="button" class="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm sm:w-auto sm:py-2" (click)="vault.undoOpen.set(true)">
           تراجع عن آخر استلام
         </button>

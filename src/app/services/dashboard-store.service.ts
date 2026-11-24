@@ -11,15 +11,16 @@ import { buildGarageAccounts } from '../utils/garage-accounts';
 import { currentMonthKey, monthKey, monthLabel } from '../utils/format';
 import { downPaymentLabel } from '../utils/schedule-labels';
 import { assignStableIds } from '../utils/stable-ids';
-import { writeLocalUpdatedAt } from './state-meta';
-
-const STORAGE_KEY = 'piece86.dashboard.v1';
-
 @Injectable({ providedIn: 'root' })
 export class DashboardStore {
-  readonly data = signal<ParsedWorkbook | null>(this.read());
+  readonly data = signal<ParsedWorkbook | null>(null);
   readonly error = signal<string | null>(null);
   readonly parsing = signal(false);
+  private sync: (() => void) | null = null;
+
+  bindSync(sync: () => void): void {
+    this.sync = sync;
+  }
 
   readonly contracts = computed(() => this.data()?.contracts ?? []);
   readonly withdrawals = computed(() => this.data()?.withdrawals ?? []);
@@ -125,17 +126,16 @@ export class DashboardStore {
       });
   });
 
-  setData(data: ParsedWorkbook, updatedAt?: string): void {
+  setData(data: ParsedWorkbook, _updatedAt?: string): void {
     assignStableIds(data.contracts ?? []);
     this.data.set(data);
     this.error.set(null);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    writeLocalUpdatedAt(updatedAt ?? data.uploadedAt);
+    this.sync?.();
   }
 
   clear(): void {
     this.data.set(null);
-    localStorage.removeItem(STORAGE_KEY);
+    this.sync?.();
   }
 
   filterContracts(query: string): Contract[] {
@@ -147,17 +147,6 @@ export class DashboardStore {
     );
   }
 
-  private read(): ParsedWorkbook | null {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return null;
-      const data = JSON.parse(raw) as ParsedWorkbook;
-      assignStableIds(data.contracts ?? []);
-      return data;
-    } catch {
-      return null;
-    }
-  }
 }
 
 function round2(value: number): number {

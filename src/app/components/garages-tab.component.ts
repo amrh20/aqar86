@@ -92,7 +92,7 @@ import { scheduleBadgeClass } from '../utils/schedule-labels';
                             type="checkbox"
                             class="mt-0.5 accent-slate-900"
                             [checked]="vault.isChecked(item.id)"
-                            [disabled]="vault.lifecycle(item.id) === 'settled' || item.remainingAmount <= 0"
+                            [disabled]="vault.isReadOnly() || vault.lifecycle(item.id) === 'settled' || item.remainingAmount <= 0" [class.cursor-not-allowed]="vault.isReadOnly()" [class.opacity-75]="vault.isReadOnly()"
                             (click)="$event.preventDefault(); vault.toggle(item.id)"
                           />
                           <div class="min-w-0 flex-1">
@@ -129,7 +129,7 @@ import { scheduleBadgeClass } from '../utils/schedule-labels';
                                 type="checkbox"
                                 class="accent-slate-900"
                                 [checked]="vault.isChecked(item.id)"
-                                [disabled]="vault.lifecycle(item.id) === 'settled' || item.remainingAmount <= 0"
+                                [disabled]="vault.isReadOnly() || vault.lifecycle(item.id) === 'settled' || item.remainingAmount <= 0" [class.cursor-not-allowed]="vault.isReadOnly()" [class.opacity-75]="vault.isReadOnly()"
                                 (click)="$event.preventDefault(); vault.toggle(item.id)"
                               />
                             </td>
