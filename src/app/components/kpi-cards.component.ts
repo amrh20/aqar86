@@ -181,6 +181,46 @@ import { dateInputToIso, formatDate, formatMoney, toDateInputValue } from '../ut
         </div>
       </div>
     }
+
+    @if (vault.pendingToggle(); as pending) {
+      <div class="fixed inset-0 z-[70] flex items-end justify-center bg-slate-900/40 p-0 sm:items-center sm:p-4" (click)="vault.cancelToggle()">
+        <div
+          class="w-full max-w-md rounded-t-2xl border border-slate-200 bg-white p-4 shadow-xl sm:rounded-2xl sm:p-6"
+          role="dialog"
+          aria-modal="true"
+          (click)="$event.stopPropagation()"
+        >
+          <h3 class="text-lg font-semibold">
+            {{ pending.willCheck ? 'تأكيد التسديد' : 'تأكيد إلغاء التسديد' }}
+          </h3>
+          <p class="mt-2 text-sm leading-6 text-slate-600">
+            @if (pending.willCheck) {
+              هيتضاف البند للخزنة ويُعتبر مسدد. متأكد؟
+            } @else {
+              هيتشال البند من الخزنة ويرجع غير مسدد. متأكد؟
+            }
+          </p>
+          @if (pending.item; as item) {
+            <div class="mt-4 rounded-xl border border-slate-100 bg-slate-50 px-3 py-3 text-sm">
+              <p class="font-medium text-slate-900">{{ item.clientName }} · شقة {{ item.unitNumber }}</p>
+              <p class="mt-1 text-slate-600">{{ item.label }} · نسبتك {{ money(item.partnerShare) }}</p>
+            </div>
+          }
+          <div class="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <button type="button" class="min-h-11 rounded-xl border border-slate-200 px-4 py-3 text-sm sm:py-2" (click)="vault.cancelToggle()">إلغاء</button>
+            <button
+              type="button"
+              class="min-h-11 rounded-xl px-4 py-3 text-sm text-white sm:py-2"
+              [class.bg-slate-900]="pending.willCheck"
+              [class.bg-rose-700]="!pending.willCheck"
+              (click)="vault.confirmToggle()"
+            >
+              {{ pending.willCheck ? 'تأكيد التسديد' : 'تأكيد الإلغاء' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    }
   `,
 })
 export class KpiCardsComponent {

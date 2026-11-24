@@ -2,10 +2,12 @@ import { Injectable, computed, signal } from '@angular/core';
 import {
   Contract,
   DashboardTotals,
+  GarageAccount,
   MonthBucket,
   MonthInstallmentRow,
   ParsedWorkbook,
 } from '../models/dashboard.models';
+import { buildGarageAccounts } from '../utils/garage-accounts';
 import { currentMonthKey, monthKey, monthLabel } from '../utils/format';
 import { downPaymentLabel } from '../utils/schedule-labels';
 import { assignStableIds } from '../utils/stable-ids';
@@ -21,6 +23,7 @@ export class DashboardStore {
 
   readonly contracts = computed(() => this.data()?.contracts ?? []);
   readonly withdrawals = computed(() => this.data()?.withdrawals ?? []);
+  readonly garageAccounts = computed<GarageAccount[]>(() => buildGarageAccounts(this.contracts()));
 
   readonly totals = computed<DashboardTotals>(() => {
     const contracts = this.contracts();

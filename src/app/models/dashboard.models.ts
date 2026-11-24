@@ -35,6 +35,27 @@ export interface Contract {
   partnerDownPaymentShare: number;
   downPaymentId: string;
   installments: Installment[];
+  /** True when this record is a garage-only deal (no apartment sale). */
+  garageOnly?: boolean;
+}
+
+export type GarageMode = 'scheduled' | 'blended' | 'partial';
+
+/** Aggregated garage view for the dedicated Garages tab. */
+export interface GarageAccount {
+  id: string;
+  clientName: string;
+  clientCode: string;
+  unitNumber: string;
+  garageOnly: boolean;
+  garagePrice: number;
+  paidAmount: number;
+  remainingAmount: number;
+  partnerRemainingShare: number;
+  remainingMonths: number;
+  nextDueDate: string | null;
+  mode: GarageMode;
+  installments: Installment[];
 }
 
 export interface PayoutRecord {

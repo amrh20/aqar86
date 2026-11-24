@@ -18,6 +18,8 @@ export function downPaymentLabel(): ScheduleLabel {
 export function assignScheduleLabels(contracts: Contract[]): void {
   for (const contract of contracts) {
     for (const installment of contract.installments ?? []) {
+      // Preserve explicit garage lines created during Excel enrichment.
+      if (installment.scheduleLabel === 'جراج') continue;
       installment.scheduleLabel = classifyInstallment(contract, installment);
     }
   }
@@ -34,12 +36,20 @@ export function scheduleBadgeClass(label: string | null | undefined): string {
     case 'دفعة':
       return 'bg-amber-50 text-amber-800';
     case 'جراج':
-      return 'bg-violet-50 text-violet-700';
+      return 'bg-violet-100 text-violet-800';
     case 'قسط أخير':
       return 'bg-sky-50 text-sky-800';
     default:
       return 'bg-slate-100 text-slate-600';
   }
+}
+
+export function isGarageLabel(label: string | null | undefined): boolean {
+  return label === 'جراج';
+}
+
+export function isApartmentScheduleLabel(label: string | null | undefined): boolean {
+  return !isGarageLabel(label) && label !== 'مقدم';
 }
 
 function classifyInstallment(contract: Contract, installment: Installment): ScheduleLabel {
@@ -58,9 +68,18 @@ function classifyInstallment(contract: Contract, installment: Installment): Sche
   const price = contract.unitPrice;
   const garage = contract.garagePrice ?? 0;
 
+  if (contract.garageOnly) return 'جراج';
+
   if (near(installment.amount, price * 0.05)) return 'دفعة 5%';
   if (near(installment.amount, price * 0.1)) return 'دفعة 10%';
-  if (garage > 0 && near(installment.amount, garage)) return 'جراج';
+
+  // Only the first installment that matches garage price is tagged جراج
+  // (later same amounts are usually annual extras, not extra garages).
+  if (garage > 0 && near(installment.amount, garage)) {
+    const firstGarage = (contract.installments ?? []).find((item) => near(item.amount, garage));
+    if (firstGarage && firstGarage === installment) return 'جراج';
+  }
+
   if (repeats >= minRepeats) return 'قسط دوري';
   if (installment.dueDate && installment.dueDate === lastDue && repeats === 1) return 'قسط أخير';
   return 'دفعة';

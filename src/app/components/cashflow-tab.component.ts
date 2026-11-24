@@ -3,6 +3,7 @@ import { LifecycleFilter } from '../models/dashboard.models';
 import { DashboardStore } from '../services/dashboard-store.service';
 import { VaultStateService } from '../services/vault-state.service';
 import { formatDate, formatMoney } from '../utils/format';
+import { groupPaymentRows, partKindLabel, PaymentGroup } from '../utils/payment-groups';
 import { scheduleBadgeClass } from '../utils/schedule-labels';
 
 @Component({
@@ -86,34 +87,49 @@ import { scheduleBadgeClass } from '../utils/schedule-labels';
           @if (openKey() === month.key) {
             <div class="border-t border-slate-100 px-3 py-3 sm:px-5">
               <div class="space-y-2 md:hidden">
-                @for (row of month.rows; track row.id) {
+                @for (group of month.groups; track group.key) {
                   <div class="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
-                    <div class="flex items-start gap-3">
-                      <input
-                        type="checkbox"
-                        class="mt-0.5 accent-slate-900"
-                        [checked]="vault.isChecked(row.id)"
-                        [disabled]="vault.lifecycle(row.id) === 'settled'"
-                        (change)="vault.toggle(row.id)"
-                      />
-                      <div class="min-w-0 flex-1">
-                        <div class="flex flex-wrap items-center gap-2">
-                          <span class="font-medium text-slate-900">{{ row.clientName }}</span>
-                          <span class="text-xs text-slate-500">شقة {{ row.unitNumber }}</span>
-                          <span class="rounded px-1.5 py-0.5 text-xs" [class]="badge(row.scheduleLabel)">{{ row.scheduleLabel }}</span>
-                        </div>
-                        <p class="mt-1 text-xs text-slate-500">{{ date(row.dueDate) }} · {{ money(row.amount) }}</p>
-                        <p class="mt-1 text-sm font-medium text-slate-900">نسبتك: {{ money(row.partnerShare) }}</p>
-                        <div class="mt-2">
-                          @if (vault.lifecycle(row.id) === 'settled') {
-                            <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">تم الاستلام {{ date(vault.settledDate(row.id)) }}</span>
-                          } @else if (vault.lifecycle(row.id) === 'vault') {
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="font-medium text-slate-900">{{ group.clientName }}</span>
+                      <span class="text-xs text-slate-500">شقة {{ group.unitNumber }}</span>
+                      @if (group.hasGarage && group.hasApartment) {
+                        <span class="rounded bg-violet-50 px-1.5 py-0.5 text-xs text-violet-700">شقة + جراج</span>
+                      } @else if (group.hasGarage) {
+                        <span class="rounded bg-violet-50 px-1.5 py-0.5 text-xs text-violet-700">جراج</span>
+                      }
+                    </div>
+                    <p class="mt-1 text-xs text-slate-500">{{ date(group.dueDate) }}</p>
+                    <p class="mt-1 text-sm font-semibold text-slate-900">{{ money(group.totalAmount) }}</p>
+                    @if (group.parts.length > 1) {
+                      <div class="mt-1 space-y-0.5 text-xs text-slate-600">
+                        @for (part of group.parts; track part.id) {
+                          <p>{{ kindLabel(part.scheduleLabel) }}: {{ money(part.amount) }}</p>
+                        }
+                      </div>
+                    } @else {
+                      <span class="mt-1 inline-block rounded px-1.5 py-0.5 text-xs" [class]="badge(group.parts[0].scheduleLabel)">{{ group.parts[0].scheduleLabel }}</span>
+                    }
+                    <p class="mt-1 text-sm font-medium text-slate-900">نسبتك: {{ money(group.totalPartnerShare) }}</p>
+                    <div class="mt-2 space-y-2">
+                      @for (part of group.parts; track part.id) {
+                        <div class="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            class="accent-slate-900"
+                            [checked]="vault.isChecked(part.id)"
+                            [disabled]="vault.lifecycle(part.id) === 'settled'"
+                            (click)="$event.preventDefault(); vault.toggle(part.id)"
+                          />
+                          <span class="text-xs text-slate-600">{{ kindLabel(part.scheduleLabel) }}</span>
+                          @if (vault.lifecycle(part.id) === 'settled') {
+                            <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">تم الاستلام</span>
+                          } @else if (vault.lifecycle(part.id) === 'vault') {
                             <span class="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-800">في الخزنة</span>
                           } @else {
                             <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">غير مسدد</span>
                           }
                         </div>
-                      </div>
+                      }
                     </div>
                   </div>
                 }
@@ -140,33 +156,62 @@ import { scheduleBadgeClass } from '../utils/schedule-labels';
                     </tr>
                   </thead>
                   <tbody>
-                    @for (row of month.rows; track row.id) {
-                      <tr class="border-t border-slate-50">
+                    @for (group of month.groups; track group.key) {
+                      <tr class="border-t border-slate-50 align-top">
                         <td class="py-2">
-                          <input
-                            type="checkbox"
-                            class="accent-slate-900"
-                            [checked]="vault.isChecked(row.id)"
-                            [disabled]="vault.lifecycle(row.id) === 'settled'"
-                            (change)="vault.toggle(row.id)"
-                          />
+                          <div class="flex flex-col gap-2">
+                            @for (part of group.parts; track part.id) {
+                              <input
+                                type="checkbox"
+                                class="accent-slate-900"
+                                [checked]="vault.isChecked(part.id)"
+                                [disabled]="vault.lifecycle(part.id) === 'settled'"
+                                (click)="$event.preventDefault(); vault.toggle(part.id)"
+                                [title]="kindLabel(part.scheduleLabel)"
+                              />
+                            }
+                          </div>
                         </td>
                         <td class="py-2">
-                          <span class="rounded-full px-2 py-0.5 text-xs" [class]="badge(row.scheduleLabel)">{{ row.scheduleLabel }}</span>
-                        </td>
-                        <td class="py-2">{{ row.clientName }}</td>
-                        <td class="py-2">{{ row.unitNumber }}</td>
-                        <td class="py-2">{{ date(row.dueDate) }}</td>
-                        <td class="py-2">{{ money(row.amount) }}</td>
-                        <td class="py-2 font-medium">{{ money(row.partnerShare) }}</td>
-                        <td class="py-2">
-                          @if (vault.lifecycle(row.id) === 'settled') {
-                            <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">تم الاستلام {{ date(vault.settledDate(row.id)) }}</span>
-                          } @else if (vault.lifecycle(row.id) === 'vault') {
-                            <span class="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-800">في الخزنة</span>
+                          @if (group.parts.length === 1) {
+                            <span class="rounded-full px-2 py-0.5 text-xs" [class]="badge(group.parts[0].scheduleLabel)">{{ group.parts[0].scheduleLabel }}</span>
                           } @else {
-                            <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">غير مسدد</span>
+                            <div class="space-y-1">
+                              <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-700">إجمالي مستحق</span>
+                              @for (part of group.parts; track part.id) {
+                                <div class="text-xs text-slate-500">{{ kindLabel(part.scheduleLabel) }} · {{ part.scheduleLabel }}</div>
+                              }
+                            </div>
                           }
+                        </td>
+                        <td class="py-2">{{ group.clientName }}</td>
+                        <td class="py-2">{{ group.unitNumber }}</td>
+                        <td class="py-2">{{ date(group.dueDate) }}</td>
+                        <td class="py-2">
+                          <div class="font-medium text-slate-900">{{ money(group.totalAmount) }}</div>
+                          @if (group.parts.length > 1) {
+                            <div class="mt-1 space-y-0.5 text-xs text-slate-500">
+                              @for (part of group.parts; track part.id) {
+                                <div>{{ kindLabel(part.scheduleLabel) }}: {{ money(part.amount) }}</div>
+                              }
+                            </div>
+                          }
+                        </td>
+                        <td class="py-2 font-medium">{{ money(group.totalPartnerShare) }}</td>
+                        <td class="py-2">
+                          <div class="space-y-1">
+                            @for (part of group.parts; track part.id) {
+                              <div>
+                                @if (vault.lifecycle(part.id) === 'settled') {
+                                  <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">تم الاستلام</span>
+                                } @else if (vault.lifecycle(part.id) === 'vault') {
+                                  <span class="rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-800">في الخزنة</span>
+                                } @else {
+                                  <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">غير مسدد</span>
+                                }
+                              </div>
+                            }
+                          </div>
                         </td>
                       </tr>
                     }
@@ -197,6 +242,7 @@ export class CashflowTabComponent {
   readonly money = formatMoney;
   readonly date = formatDate;
   readonly badge = scheduleBadgeClass;
+  readonly kindLabel = partKindLabel;
   readonly filters: { id: LifecycleFilter; label: string }[] = [
     { id: 'all', label: 'الكل' },
     { id: 'unpaid', label: 'غير مسدد' },
@@ -220,10 +266,26 @@ export class CashflowTabComponent {
     return this.store.months()
       .filter((month) => year === 'all' || month.key.startsWith(`${year}-`))
       .map((month) => {
+        const unpaidDue = month.rows.filter(
+          (row) =>
+            row.kind === 'installment' &&
+            row.remainingAmount > 0 &&
+            this.vault.lifecycle(row.id) === 'unpaid',
+        );
+        const dueCount = unpaidDue.length;
+        const dueAmount = Math.round(unpaidDue.reduce((sum, row) => sum + row.remainingAmount, 0) * 100) / 100;
+        const dueShare = Math.round(unpaidDue.reduce((sum, row) => sum + row.remainingAmount * 0.07, 0) * 100) / 100;
+
+        let tone = month.tone;
+        if (month.key !== 'unknown' && month.tone !== 'current' && month.tone !== 'upcoming') {
+          tone = dueCount > 0 ? 'overdue' : 'complete';
+        }
+
         const rows = month.rows.filter((row) => filter === 'all' || this.vault.lifecycle(row.id) === filter);
         const totalAmount = Math.round(rows.reduce((sum, row) => sum + row.amount, 0) * 100) / 100;
         const partnerShare = Math.round(rows.reduce((sum, row) => sum + row.partnerShare, 0) * 100) / 100;
-        return { ...month, rows, totalAmount, partnerShare };
+        const groups: PaymentGroup[] = groupPaymentRows(rows);
+        return { ...month, rows, groups, totalAmount, partnerShare, tone, dueCount, dueAmount, dueShare };
       })
       .filter((month) => month.rows.length > 0);
   });

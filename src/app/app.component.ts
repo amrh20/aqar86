@@ -6,6 +6,7 @@ import { ClientsTabComponent } from './components/clients-tab.component';
 import { WithdrawalsTabComponent } from './components/withdrawals-tab.component';
 import { MyVaultTabComponent } from './components/my-vault-tab.component';
 import { OverdueTabComponent } from './components/overdue-tab.component';
+import { GaragesTabComponent } from './components/garages-tab.component';
 import { ToastHostComponent } from './components/toast-host.component';
 import { DashboardStore } from './services/dashboard-store.service';
 import { ExcelParserService } from './services/excel-parser.service';
@@ -13,7 +14,7 @@ import { LatestStateService } from './services/latest-state.service';
 import { VaultStateService } from './services/vault-state.service';
 import { formatDate, formatMoney, toDateInputValue } from './utils/format';
 
-type Tab = 'cashflow' | 'clients' | 'myvault' | 'overdue' | 'withdrawals';
+type Tab = 'cashflow' | 'clients' | 'myvault' | 'overdue' | 'garages' | 'withdrawals';
 
 @Component({
   selector: 'app-root',
@@ -25,6 +26,7 @@ type Tab = 'cashflow' | 'clients' | 'myvault' | 'overdue' | 'withdrawals';
     ClientsTabComponent,
     MyVaultTabComponent,
     OverdueTabComponent,
+    GaragesTabComponent,
     WithdrawalsTabComponent,
     ToastHostComponent,
   ],

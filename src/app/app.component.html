@@ -140,6 +140,24 @@
         <button
           type="button"
           class="-mb-px inline-flex shrink-0 items-center gap-2 border-b-2 px-1 pb-3 text-sm whitespace-nowrap transition-colors hover:bg-slate-50/80"
+          [ngClass]="tab() === 'garages'
+            ? 'border-violet-600 font-semibold text-violet-700'
+            : 'border-transparent font-medium text-slate-500 hover:text-slate-800'"
+          (click)="tab.set('garages')"
+        >
+          <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 21V9l9-6 9 6v12" />
+            <path d="M9 21v-8h6v8" />
+          </svg>
+          <span class="sm:hidden">جراج</span>
+          <span class="hidden sm:inline">الجراجات</span>
+          @if (store.garageAccounts().length) {
+            <span class="ms-1 rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] text-violet-800">{{ store.garageAccounts().length }}</span>
+          }
+        </button>
+        <button
+          type="button"
+          class="-mb-px inline-flex shrink-0 items-center gap-2 border-b-2 px-1 pb-3 text-sm whitespace-nowrap transition-colors hover:bg-slate-50/80"
           [ngClass]="tab() === 'withdrawals'
             ? 'border-slate-900 font-semibold text-slate-900'
             : 'border-transparent font-medium text-slate-500 hover:text-slate-800'"
@@ -159,6 +177,7 @@
         @case ('clients') { <app-clients-tab /> }
         @case ('myvault') { <app-my-vault-tab /> }
         @case ('overdue') { <app-overdue-tab /> }
+        @case ('garages') { <app-garages-tab /> }
         @case ('withdrawals') { <app-withdrawals-tab /> }
       }
     }

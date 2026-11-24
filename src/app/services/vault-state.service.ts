@@ -20,6 +20,16 @@ export class VaultStateService {
   readonly payoutDate = signal('');
   readonly payoutNote = signal('');
   readonly importError = signal<string | null>(null);
+  /** بند في انتظار تأكيد تفعيل/إلغاء التسديد من التشيك بوكس */
+  readonly pendingToggleId = signal<string | null>(null);
+
+  readonly pendingToggle = computed(() => {
+    const id = this.pendingToggleId();
+    if (!id) return null;
+    const item = this.itemById().get(id) ?? null;
+    const willCheck = !this.isChecked(id);
+    return { id, item, willCheck };
+  });
 
   readonly catalog = computed<TrackedItem[]>(() => {
     const items: TrackedItem[] = [];
@@ -113,8 +123,17 @@ export class VaultStateService {
     return this.settledById().get(id)?.date ?? null;
   }
 
+  /** يطلب تأكيد قبل تغيير حالة التسديد */
   toggle(id: string): void {
     if (this.settledById().has(id)) return;
+    this.pendingToggleId.set(id);
+  }
+
+  confirmToggle(): void {
+    const id = this.pendingToggleId();
+    this.pendingToggleId.set(null);
+    if (!id || this.settledById().has(id)) return;
+
     const next = !this.isChecked(id);
     this.manualPaidMap.update((map) => ({ ...map, [id]: next }));
     this.persist();
@@ -123,6 +142,10 @@ export class VaultStateService {
       const label = item?.label ?? (item?.kind === 'downPayment' ? downPaymentLabel() : 'قسط دوري');
       this.toast.success(`تم إضافة ${label} إلى الخزنة`);
     }
+  }
+
+  cancelToggle(): void {
+    this.pendingToggleId.set(null);
   }
 
   openPayoutModal(today: string): void {
