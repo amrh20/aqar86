@@ -15,11 +15,26 @@ export function downPaymentLabel(): ScheduleLabel {
   return DOWN_PAYMENT_LABEL;
 }
 
+/** True when installments already finance totalContract − downPayment (garage inside schedule). */
+export function isGarageBlendedIntoSchedule(contract: Contract): boolean {
+  if (contract.garageOnly) return false;
+  const garage = contract.garagePrice ?? 0;
+  if (garage <= 0) return false;
+  const installments = contract.installments ?? [];
+  const scheduleSum = round2(installments.reduce((sum, item) => sum + item.amount, 0));
+  const totalContract = contract.totalContract ?? round2((contract.unitPrice ?? 0) + garage);
+  const financedRemain = round2(totalContract - (contract.downPayment ?? 0));
+  return financedRemain - scheduleSum <= 50;
+}
+
 export function assignScheduleLabels(contracts: Contract[]): void {
   for (const contract of contracts) {
+    const blended = isGarageBlendedIntoSchedule(contract);
     for (const installment of contract.installments ?? []) {
-      // Preserve explicit garage lines created during Excel enrichment.
-      if (installment.scheduleLabel === 'جراج') continue;
+      // Preserve explicit enrichment جراج lines only when garage is NOT already
+      // financed inside the apartment schedule. When blended, reclassify so a
+      // coincidental amount≈garagePrice is not shown as a standalone garage balloon.
+      if (installment.scheduleLabel === 'جراج' && !blended) continue;
       installment.scheduleLabel = classifyInstallment(contract, installment);
     }
   }
@@ -73,9 +88,14 @@ function classifyInstallment(contract: Contract, installment: Installment): Sche
   if (near(installment.amount, price * 0.05)) return 'دفعة 5%';
   if (near(installment.amount, price * 0.1)) return 'دفعة 10%';
 
-  // Only the first installment that matches garage price is tagged جراج
-  // (later same amounts are usually annual extras, not extra garages).
-  if (garage > 0 && near(installment.amount, garage)) {
+  // Tag amount≈garagePrice as جراج only when the schedule does NOT already
+  // cover (unit + garage − down). Otherwise garage is financed inside the
+  // apartment schedule (مدموج) and a matching amount is just a دفعة.
+  if (
+    garage > 0 &&
+    !isGarageBlendedIntoSchedule(contract) &&
+    near(installment.amount, garage)
+  ) {
     const firstGarage = (contract.installments ?? []).find((item) => near(item.amount, garage));
     if (firstGarage && firstGarage === installment) return 'جراج';
   }
@@ -98,4 +118,8 @@ function near(amount: number, target: number): boolean {
 
 function roundedAmount(amount: number): number {
   return Math.round(amount * 100) / 100;
+}
+
+function round2(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
 }
